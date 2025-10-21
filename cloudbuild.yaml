@@ -1,0 +1,53 @@
+# Google Cloud Build 配置
+steps:
+  # 建構前端
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+    dir: '.'
+    
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'build']
+    dir: '.'
+    env:
+      - 'GEMINI_API_KEY=${_GEMINI_API_KEY}'
+      
+  # 建構後端 Docker 映像
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/ai-dispatch-backend', './backend']
+    
+  # 推送映像到 Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/ai-dispatch-backend']
+    
+  # 部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ai-dispatch-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/ai-dispatch-backend'
+      - '--region'
+      - 'asia-east1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,FIRESTORE_COLLECTION=tasks'
+      
+  # 部署前端到 Cloud Storage
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gsutil'
+    args:
+      - '-m'
+      - 'cp'
+      - '-r'
+      - './dist/*'
+      - 'gs://$PROJECT_ID-ai-dispatch-frontend'
+
+substitutions:
+  _GEMINI_API_KEY: 'your-gemini-api-key'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

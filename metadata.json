@@ -1,0 +1,7 @@
+{
+  "name": "AI 任務派遣中心 (AI Task Dispatch Center)",
+  "description": "一個支援多模式輸入（文字、語音、檔案、URL）的 AI 應用，能即時將輸入內容解析為結構化的任務 JSON 和摘要，並模擬與後端系統整合。",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
