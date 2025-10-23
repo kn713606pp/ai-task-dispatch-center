@@ -27,11 +27,6 @@ const App: React.FC = () => {
         }))
     );
 
-    const handleAudioTranscription = useCallback((transcription: string) => {
-        // 將轉錄文字作為輸入進行分析
-        handleAnalyze(transcription, '', [], '');
-    }, []);
-
     const handleAnalyze = useCallback(async (text: string, url: string, files: File[], manualTask: string) => {
         if (!text && !url && files.length === 0 && !manualTask) {
             alert('請至少輸入文字、連結、檔案或手動輸入任務。');
@@ -62,6 +57,11 @@ const App: React.FC = () => {
             setIsAnalyzing(false);
         }
     }, []);
+
+    const handleAudioTranscription = useCallback((transcription: string) => {
+        // 將轉錄文字作為輸入進行分析
+        handleAnalyze(transcription, '', [], '');
+    }, [handleAnalyze]);
 
     const handleDispatch = useCallback(async () => {
         if (!tasks) {

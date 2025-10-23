@@ -151,7 +151,11 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                     const newTime = prev + 1;
                     // 每10分鐘自動換檔
                     if (newTime % 600 === 0) {
-                        stopRecording();
+                        // 停止當前錄音
+                        if (mediaRecorderRef.current && isRecording) {
+                            mediaRecorderRef.current.stop();
+                        }
+                        // 延遲1秒後開始新的錄音
                         setTimeout(() => {
                             startRecording();
                         }, 1000);
@@ -237,12 +241,12 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                 }
             }
             
-                    const combinedTranscription = allTranscriptions.join('\n---\n\n');
-                    setTranscriptionResult(combinedTranscription);
-                    
-                    // 清除已轉錄的檔案
-                    setAudioFiles(prev => prev.filter(file => !selectedFiles.has(file.id)));
-                    setSelectedFiles(new Set());
+            const combinedTranscription = allTranscriptions.join('\n---\n\n');
+            setTranscriptionResult(combinedTranscription);
+            
+            // 清除已轉錄的檔案
+            setAudioFiles(prev => prev.filter(file => !selectedFiles.has(file.id)));
+            setSelectedFiles(new Set());
             
         } catch (error) {
             console.error('音訊轉錄錯誤:', error);
