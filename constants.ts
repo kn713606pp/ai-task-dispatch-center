@@ -1,5 +1,5 @@
 
-import { Type } from "@google/genai";
+// import { Type } from "@google/genai";
 
 export const CURRENT_DATE = '2025-09-28'; // 依照指令，設定基準日為 2025-09-28
 export const OPAL_WEBHOOK_URL = 'YOUR_OPAL_WEBHOOK_URL_HERE'; // !!! 替換此處 !!!
@@ -70,27 +70,27 @@ export const SYSTEM_INSTRUCTION = `
 `;
 
 export const RESPONSE_SCHEMA = {
-    type: Type.OBJECT,
+    type: "object",
     properties: {
         "tasks": {
-            type: Type.ARRAY,
+            type: "array",
             description: "識別和提取出的所有具體工作任務列表。",
             items: {
-                type: Type.OBJECT,
+                type: "object",
                 properties: {
-                    "title": { type: Type.STRING, description: "任務的簡潔標題。若為急件需加【急件】標籤。" },
-                    "description": { type: Type.STRING, description: "任務的詳細描述和原始上下文，若有加註邏輯，需在此處顯示。" },
-                    "priority": { type: Type.STRING, description: "任務優先級: '緊急', '高', '中', '低'。" },
-                    "status": { type: Type.STRING, description: "任務的狀態，固定為 '待辦事項'。" },
-                    "category": { type: Type.STRING, description: "任務所屬部門 (Category) 名稱。" },
-                    "assignee": { type: Type.STRING, description: "任務負責人的顯示名稱。" },
-                    "dueDate": { type: Type.STRING, description: "截止日期，格式為 YYYY-MM-DD。若無則為 null。" },
+                    "title": { type: "string", description: "任務的簡潔標題。若為急件需加【急件】標籤。" },
+                    "description": { type: "string", description: "任務的詳細描述和原始上下文，若有加註邏輯，需在此處顯示。" },
+                    "priority": { type: "string", description: "任務優先級: '緊急', '高', '中', '低'。" },
+                    "status": { type: "string", description: "任務的狀態，固定為 '待辦事項'。" },
+                    "category": { type: "string", description: "任務所屬部門 (Category) 名稱。" },
+                    "assignee": { type: "string", description: "任務負責人的顯示名稱。" },
+                    "dueDate": { type: "string", description: "截止日期，格式為 YYYY-MM-DD。若無則為 null。" },
                 },
                 required: ["title", "description", "priority", "status", "category", "assignee"],
             }
         },
         "summary": {
-            type: Type.STRING,
+            type: "string",
             description: "如果輸入為文件或長篇文字，此處為 AI 總結摘要（以條列式呈現）。若為簡短指令則留空。"
         }
     },
