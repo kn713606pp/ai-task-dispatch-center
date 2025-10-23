@@ -168,7 +168,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
             console.error('無法訪問麥克風:', error);
             alert('無法訪問麥克風，請檢查瀏覽器權限設定。');
         }
-    }, [recordingTime, currentFileIndex]);
+    }, [recordingTime, currentFileIndex, isRecording]);
 
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && isRecording) {
@@ -254,7 +254,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
         } finally {
             setIsProcessing(false);
         }
-    }, [selectedFiles, audioFiles, onTranscriptionComplete]);
+    }, [selectedFiles, audioFiles]);
 
     // 刪除檔案
     const deleteFile = useCallback((fileId: string) => {
