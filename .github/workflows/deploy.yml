@@ -58,21 +58,24 @@ jobs:
           
     - name: Deploy frontend to Cloud Storage
       run: |
-        gsutil mb gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/ || true
-        gsutil web set -m index.html -e 404.html gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        BUCKET_NAME="ai-dispatch-frontend-$(echo ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }} | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')"
+        echo "Using bucket name: $BUCKET_NAME"
+        gsutil mb gs://$BUCKET_NAME/ || true
+        gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME/
         if [ -d "./dist" ]; then
-          gsutil -m cp -r ./dist/* gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
-          gsutil -m rsync -r -d ./dist/ gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+          gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
+          gsutil -m rsync -r -d ./dist/ gs://$BUCKET_NAME/
         else
           echo "dist directory not found, creating placeholder"
           echo "<html><body><h1>Frontend not built</h1></body></html>" > index.html
-          gsutil cp index.html gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+          gsutil cp index.html gs://$BUCKET_NAME/
         fi
-        gsutil iam ch allUsers:objectViewer gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME/
         
     - name: Get deployment URLs
       run: |
         BACKEND_URL=$(gcloud run services describe ai-dispatch-backend --platform managed --region asia-east1 --format 'value(status.url)')
-        FRONTEND_URL="https://storage.googleapis.com/${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/index.html"
+        BUCKET_NAME="ai-dispatch-frontend-$(echo ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }} | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')"
+        FRONTEND_URL="https://storage.googleapis.com/$BUCKET_NAME/index.html"
         echo "Backend URL: $BACKEND_URL"
         echo "Frontend URL: $FRONTEND_URL"
