@@ -34,19 +34,19 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       
-    - name: Login to Docker Hub
-      run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+    - name: Login to GitHub Container Registry
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         
-    - name: Build and push to Docker Hub
+    - name: Build and push to GitHub Container Registry
       run: |
         cd backend
-        docker build -t kn713606pp/ai-dispatch-backend:latest .
-        docker push kn713606pp/ai-dispatch-backend:latest
+        docker build -t ghcr.io/${{ github.repository }}/ai-dispatch-backend:latest .
+        docker push ghcr.io/${{ github.repository }}/ai-dispatch-backend:latest
         
-    - name: Deploy to Cloud Run (Docker Hub)
+    - name: Deploy to Cloud Run (GitHub Container Registry)
       run: |
         gcloud run deploy ai-dispatch-backend \
-          --image kn713606pp/ai-dispatch-backend:latest \
+          --image ghcr.io/${{ github.repository }}/ai-dispatch-backend:latest \
           --platform managed \
           --region asia-east1 \
           --allow-unauthenticated \
