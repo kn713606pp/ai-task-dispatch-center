@@ -5,7 +5,7 @@ WORKDIR /app
 
 # 複製 package.json 和安裝依賴
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production --no-audit --no-fund
 
 # 複製應用程式碼
 COPY . .
