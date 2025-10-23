@@ -35,6 +35,9 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
     const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
     
+    // 轉錄結果管理
+    const [transcriptionResult, setTranscriptionResult] = useState<string>('');
+    
     // 錄音相關
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -234,12 +237,12 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                 }
             }
             
-            const combinedTranscription = allTranscriptions.join('\n---\n\n');
-            onTranscriptionComplete(combinedTranscription);
-            
-            // 清除已轉錄的檔案
-            setAudioFiles(prev => prev.filter(file => !selectedFiles.has(file.id)));
-            setSelectedFiles(new Set());
+                    const combinedTranscription = allTranscriptions.join('\n---\n\n');
+                    setTranscriptionResult(combinedTranscription);
+                    
+                    // 清除已轉錄的檔案
+                    setAudioFiles(prev => prev.filter(file => !selectedFiles.has(file.id)));
+                    setSelectedFiles(new Set());
             
         } catch (error) {
             console.error('音訊轉錄錯誤:', error);
@@ -282,7 +285,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
             <div className="space-y-6">
                 {/* 語音輸入區 */}
                 <div className="bg-white p-4 rounded-lg border">
-                    <h3 className="font-medium mb-3 text-gray-800">🎙️ 語音即時輸入</h3>
+                    <h3 className="font-medium mb-3 text-gray-800">🎤 語音即時輸入</h3>
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <button
@@ -304,19 +307,25 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                             )}
                         </div>
                         
-                        {voiceText && (
-                            <div className="space-y-2">
-                                <div className="p-3 bg-gray-50 rounded border text-sm">
-                                    {voiceText}
-                                </div>
+                        {/* 語音輸入文字視窗 */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">語音輸入結果：</label>
+                            <div className="p-3 bg-gray-50 rounded border min-h-[100px] max-h-60 overflow-y-auto">
+                                {voiceText ? (
+                                    <p className="text-gray-800 whitespace-pre-wrap">{voiceText}</p>
+                                ) : (
+                                    <p className="text-gray-500 italic">語音輸入結果將顯示在此處...</p>
+                                )}
+                            </div>
+                            {voiceText && (
                                 <button
                                     onClick={useVoiceText}
                                     className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
                                 >
                                     ✅ 使用此文字
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -420,16 +429,52 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                         )}
                     </div>
                 )}
+
+                {/* 轉錄結果文字視窗 */}
+                <div className="bg-white p-4 rounded-lg border">
+                    <h3 className="font-medium mb-3 text-gray-800">📝 轉錄結果</h3>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">轉錄文字內容：</label>
+                        <div className="p-3 bg-gray-50 rounded border min-h-[120px] max-h-80 overflow-y-auto">
+                            {transcriptionResult ? (
+                                <p className="text-gray-800 whitespace-pre-wrap">{transcriptionResult}</p>
+                            ) : (
+                                <p className="text-gray-500 italic text-sm">
+                                    選擇錄音檔案並點擊「轉錄」按鈕後，轉錄結果將顯示在此處...
+                                </p>
+                            )}
+                        </div>
+                        {transcriptionResult && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => onTranscriptionComplete(transcriptionResult)}
+                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                                >
+                                    ✅ 使用此文字
+                                </button>
+                                <button
+                                    onClick={() => setTranscriptionResult('')}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                                >
+                                    🗑️ 清除結果
+                                </button>
+                            </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                            提示：轉錄完成後，點擊「使用此文字」按鈕將結果應用到任務分析中
+                        </div>
+                    </div>
+                </div>
                 
                 {/* 使用說明 */}
                 <div className="text-sm text-gray-600 bg-white p-3 rounded-lg border">
                     <strong>使用說明：</strong>
                     <ul className="list-disc list-inside mt-1 space-y-1">
-                        <li><strong>語音輸入：</strong>即時語音轉文字，適合快速輸入</li>
-                        <li><strong>錄音功能：</strong>錄製音訊檔案，支援長時間錄音</li>
-                        <li><strong>自動換檔：</strong>每10分鐘自動分段，避免檔案過大</li>
-                        <li><strong>批次轉錄：</strong>可選擇多個檔案同時轉錄</li>
-                        <li><strong>檔案管理：</strong>可查看、選擇、刪除錄音檔案</li>
+                        <li><strong>🎤 語音輸入：</strong>即時語音轉文字，適合快速輸入，結果即時顯示</li>
+                        <li><strong>🎙️ 錄音功能：</strong>錄製音訊檔案，支援長時間錄音，每10分鐘自動換檔</li>
+                        <li><strong>📁 檔案管理：</strong>可查看、選擇、刪除錄音檔案，支援全選/清除選擇</li>
+                        <li><strong>📝 批次轉錄：</strong>可選擇多個檔案同時轉錄，轉錄結果統一顯示</li>
+                        <li><strong>✅ 結果應用：</strong>轉錄完成後可選擇使用結果或清除重新轉錄</li>
                     </ul>
                 </div>
             </div>
