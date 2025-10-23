@@ -132,26 +132,19 @@ const App: React.FC = () => {
         });
     }, [backendStatus, tasks, assignees]);
 
-    const handleUpdateTasks = useCallback((newJsonText: string) => {
-        try {
-            const newTasks = JSON.parse(newJsonText);
-            setTasks(newTasks);
-            alert('JSON 已成功更新！');
-        } catch (e) {
-            alert('更新失敗：輸入的內容不是有效的 JSON 格式。');
-        }
+    const handleUpdateTasks = useCallback((newTasks: Task[]) => {
+        setTasks(newTasks);
     }, []);
 
-    const handleDeleteTasks = useCallback(() => {
-        if (window.confirm('確定要刪除所有任務嗎？')) {
-            setTasks(null);
-            setBackendStatus(null); // Also clear backend status
+    const handleDeleteTasks = useCallback((taskIds: string[]) => {
+        if (tasks) {
+            const updatedTasks = tasks.filter(task => !taskIds.includes(task.id));
+            setTasks(updatedTasks.length > 0 ? updatedTasks : null);
         }
-    }, []);
+    }, [tasks]);
 
     const handleUpdateSummary = useCallback((newSummary: string) => {
         setSummary(newSummary);
-        alert('摘要已成功更新！');
     }, []);
 
     return (
