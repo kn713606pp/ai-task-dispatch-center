@@ -4,6 +4,12 @@ service: ai-dispatch-backend
 env_variables:
   NODE_ENV: production
   PORT: 8080
+  FIRESTORE_COLLECTION: tasks
+  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+  GMAIL_USER: ${{ secrets.GMAIL_USER }}
+  GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
 automatic_scaling:
   min_instances: 1

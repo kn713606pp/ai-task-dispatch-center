@@ -34,12 +34,17 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       
-    - name: Deploy to App Engine
+    - name: Deploy to Cloud Run (Source)
       run: |
-        cd backend
-        gcloud app deploy --quiet \
-          --version=v1 \
-          --set-env-vars="NODE_ENV=production,FIRESTORE_COLLECTION=tasks,GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }},GMAIL_USER=${{ secrets.GMAIL_USER }},GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}"
+        gcloud run deploy ai-dispatch-backend \
+          --source ./backend \
+          --platform managed \
+          --region asia-east1 \
+          --allow-unauthenticated \
+          --memory 4Gi \
+          --cpu 2 \
+          --timeout 3600 \
+          --max-instances 10
           
     - name: Deploy frontend to Cloud Storage
       run: |
