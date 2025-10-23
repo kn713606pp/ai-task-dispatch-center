@@ -72,6 +72,12 @@ jobs:
         # 設定網站配置
         gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME/
 
+        # 檢查建構結果
+        echo "檢查建構結果:"
+        ls -la ./dist/
+        echo "建構文件內容:"
+        find ./dist/ -type f -name "*.js" -o -name "*.tsx" -o -name "*.html" | head -10
+
         # 上傳建構好的前端檔案
         gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
 
@@ -79,7 +85,12 @@ jobs:
         gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME/
 
         # 驗證部署
+        echo "上傳後的文件列表:"
         gsutil ls gs://$BUCKET_NAME/
+        
+        # 檢查特定文件
+        echo "檢查 index.html:"
+        gsutil cat gs://$BUCKET_NAME/index.html | head -20
 
         # 輸出儲存桶名稱供後續使用
         echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV

@@ -4,14 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 任務派遣中心</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #363;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
     <div id="root">
-        <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
-            <h1>載入中...</h1>
-            <p>如果這個訊息一直顯示，表示 JavaScript 沒有正常載入</p>
+        <div class="container">
+            <div class="loading">
+                <h1>🤖 AI 任務派遣中心</h1>
+                <p>正在載入 JavaScript...</p>
+                <div id="status">檢查中...</div>
+            </div>
         </div>
     </div>
-    <script type="module" src="/index.tsx"></script>
+
+    <script>
+        // 診斷腳本
+        console.log('HTML 已載入');
+        
+        // 檢查模組載入
+        setTimeout(() => {
+            const status = document.getElementById('status');
+            if (status) {
+                status.innerHTML = 'JavaScript 載入失敗 - 檢查控制台錯誤';
+                status.className = 'error';
+            }
+        }, 3000);
+
+        // 嘗試載入模組
+        try {
+            import('/index.tsx').then(() => {
+                console.log('模組載入成功');
+                const status = document.getElementById('status');
+                if (status) {
+                    status.innerHTML = '模組載入成功！';
+                    status.className = 'success';
+                }
+            }).catch((error) => {
+                console.error('模組載入失敗:', error);
+                const status = document.getElementById('status');
+                if (status) {
+                    status.innerHTML = '模組載入失敗: ' + error.message;
+                    status.className = 'error';
+                }
+            });
+        } catch (error) {
+            console.error('模組載入錯誤:', error);
+            const status = document.getElementById('status');
+            if (status) {
+                status.innerHTML = '模組載入錯誤: ' + error.message;
+                status.className = 'error';
+            }
+        }
+    </script>
 </body>
 </html>
