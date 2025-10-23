@@ -58,7 +58,7 @@ jobs:
           
     - name: Deploy frontend to Cloud Storage
       run: |
-        BUCKET_NAME="ai-dispatch-frontend-$(echo ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }} | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')"
+        BUCKET_NAME="ai-dispatch-frontend-$(date +%s)"
         echo "Using bucket name: $BUCKET_NAME"
         gsutil mb gs://$BUCKET_NAME/ || true
         gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME/
@@ -75,7 +75,7 @@ jobs:
     - name: Get deployment URLs
       run: |
         BACKEND_URL=$(gcloud run services describe ai-dispatch-backend --platform managed --region asia-east1 --format 'value(status.url)')
-        BUCKET_NAME="ai-dispatch-frontend-$(echo ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }} | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')"
+        BUCKET_NAME="ai-dispatch-frontend-$(date +%s)"
         FRONTEND_URL="https://storage.googleapis.com/$BUCKET_NAME/index.html"
         echo "Backend URL: $BACKEND_URL"
         echo "Frontend URL: $FRONTEND_URL"
