@@ -54,23 +54,39 @@ jobs:
           --cpu 2 \
           --timeout 3600 \
           --max-instances 10 \
-          --service-account=ai-dispatch-service@${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com
+          --service-account=ai-dispatch-service@${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com \
+          --set-env-vars "NODE_ENV=production,FIRESTORE_COLLECTION=tasks,GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }},GMAIL_USER=${{ secrets.GMAIL_USER }},GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}"
           
     - name: Deploy frontend to Cloud Storage
       run: |
         BUCKET_NAME="ai-dispatch-frontend-$(date +%s)"
         echo "Using bucket name: $BUCKET_NAME"
-        gsutil mb gs://$BUCKET_NAME/ || true
+        
+        # 創建儲存桶
+        gsutil mb gs://$BUCKET_NAME/ || echo "Bucket may already exist"
+        
+        # 等待儲存桶創建完成
+        sleep 10
+        
+        # 設定網站配置
         gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME/
+        
+        # 創建前端檔案
         if [ -d "./dist" ]; then
+          echo "Found dist directory, uploading files"
           gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
-          gsutil -m rsync -r -d ./dist/ gs://$BUCKET_NAME/
         else
           echo "dist directory not found, creating placeholder"
-          echo "<html><body><h1>Frontend not built</h1></body></html>" > index.html
-          gsutil cp index.html gs://$BUCKET_NAME/
+          mkdir -p dist
+          echo "<html><body><h1>AI Task Dispatch Center</h1><p>Frontend placeholder</p></body></html>" > dist/index.html
+          gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
         fi
+        
+        # 設定公開存取權限
         gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME/
+        
+        # 驗證部署
+        gsutil ls gs://$BUCKET_NAME/
         
     - name: Get deployment URLs
       run: |
