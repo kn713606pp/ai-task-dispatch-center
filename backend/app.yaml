@@ -1,0 +1,15 @@
+runtime: nodejs18
+service: ai-dispatch-backend
+
+env_variables:
+  NODE_ENV: production
+  PORT: 8080
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+resources:
+  cpu: 2
+  memory_gb: 4
