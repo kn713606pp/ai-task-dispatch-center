@@ -78,26 +78,7 @@ jobs:
         else
           echo "dist directory not found, creating placeholder"
           mkdir -p dist
-          cat > dist/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Task Dispatch Center</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
-        h1 { color: #333; }
-        p { color: #666; }
-    </style>
-</head>
-<body>
-    <h1>🤖 AI 任務派遣中心</h1>
-    <p>智慧型任務分析、自動指派與多平台通知系統</p>
-    <p>前端正在建構中...</p>
-</body>
-</html>
-EOF
+          echo '<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AI Task Dispatch Center</title><style>body{font-family:Arial,sans-serif;margin:40px;text-align:center}h1{color:#333}p{color:#666}</style></head><body><h1>🤖 AI 任務派遣中心</h1><p>智慧型任務分析、自動指派與多平台通知系統</p><p>前端正在建構中...</p></body></html>' > dist/index.html
           gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
         fi
         
