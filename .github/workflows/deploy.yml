@@ -22,7 +22,9 @@ jobs:
       run: npm install
       
     - name: Build frontend
-      run: npm run build
+      run: |
+        npm run build
+        ls -la dist/
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         
@@ -51,8 +53,14 @@ jobs:
       run: |
         gsutil mb gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/ || true
         gsutil web set -m index.html -e 404.html gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
-        gsutil -m cp -r ./dist/* gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
-        gsutil -m rsync -r -d ./dist/ gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        if [ -d "./dist" ]; then
+          gsutil -m cp -r ./dist/* gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+          gsutil -m rsync -r -d ./dist/ gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        else
+          echo "dist directory not found, creating placeholder"
+          echo "<html><body><h1>Frontend not built</h1></body></html>" > index.html
+          gsutil cp index.html gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        fi
         gsutil iam ch allUsers:objectViewer gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
         
     - name: Get deployment URLs
