@@ -1,189 +1,99 @@
 import React, { useState, useCallback } from 'react';
-import { Header } from './components/Header';
-import { InputSection } from './components/InputSection';
-import { OutputSection } from './components/OutputSection';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { processInputs } from './services/geminiService';
-import { triggerDataPersistenceWorkflow, triggerNotificationService } from './services/opalService';
-import type { Task, BackendStatus, Assignee, NotificationPayload } from './types';
-import { AssigneeManager } from './components/AssigneeManager';
-import { AudioProcessor } from './components/AudioProcessor';
-
-const ASSIGNEE_NAMES = ['艾蜜莉', '班傑明', '克蘿伊', '丹尼爾', '奥莉薇亞'];
 
 const App: React.FC = () => {
-    const [tasks, setTasks] = useState<Task[] | null>(null);
-    const [summary, setSummary] = useState<string>('等待輸入...');
-    const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-    const [isDispatching, setIsDispatching] = useState<boolean>(false);
-    const [backendStatus, setBackendStatus] = useState<BackendStatus | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [isManagerOpen, setIsManagerOpen] = useState<boolean>(false);
-    const [assignees, setAssignees] = useState<Assignee[]>(() =>
-        ASSIGNEE_NAMES.map(name => ({
-            name,
-            lineId: '',
-            gmail: ''
-        }))
-    );
-
-    const handleAudioTranscription = useCallback((transcription: string) => {
-        // 將轉錄文字作為輸入進行分析
-        handleAnalyze(transcription, '', [], '');
-    }, []);
-
-    const handleAnalyze = useCallback(async (text: string, url: string, files: File[], manualTask: string) => {
-        if (!text && !url && files.length === 0 && !manualTask) {
-            alert('請至少輸入文字、連結、檔案或手動輸入任務。');
-            return;
-        }
-
-        setIsAnalyzing(true);
-        setError(null);
-        setTasks(null);
-        setSummary('摘要生成中...');
-        setBackendStatus(null);
-
-        try {
-            const aiResponse = await processInputs(text, url, files, manualTask);
-            
-            if (aiResponse) {
-                setTasks(aiResponse.tasks);
-                setSummary(aiResponse.summary || "無須總結，輸入為簡短指令。");
-            } else {
-                 throw new Error("AI 模型未能產生有效的輸出。");
-            }
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : '發生未知錯誤';
-            console.error("Processing error:", errorMessage);
-            setError(`錯誤: AI 處理失敗。詳情請查看控制台。(${errorMessage})`);
-            setSummary("無法生成摘要。");
-        } finally {
-            setIsAnalyzing(false);
-        }
-    }, []);
-
-    const handleDispatch = useCallback(async () => {
-        if (!tasks) {
-            alert('沒有可派遣的任務。');
-            return;
-        }
-        setIsDispatching(true);
-        const initialStatus: BackendStatus = {
-            firestore: '準備中...',
-            sheets: '等待中...',
-            docs: '等待中...',
-            notification: '等待手動觸發「負責人通知」'
-        };
-        setBackendStatus(initialStatus);
-
-        await triggerDataPersistenceWorkflow(
-            tasks,
-            summary,
-            (update) => {
-                setBackendStatus(prevStatus => ({
-                    ...prevStatus!,
-                    [update.step]: update.message,
-                }));
-            }
-        );
-        setIsDispatching(false);
-    }, [tasks, summary]);
-
-    const handleSendNotification = useCallback(async () => {
-        if (!backendStatus || !backendStatus.notification.includes('等待') || !tasks) {
-            alert('通知已在發送中、已完成或沒有任務可通知。');
-            return;
-        }
-
-        // 智慧型通知邏輯：將任務按負責人分組
-        const notificationsMap = new Map<string, { assignee: Assignee; tasks: Task[] }>();
-        
-        for (const task of tasks) {
-            const assigneeInfo = assignees.find(a => a.name === task.assignee);
-            if (!assigneeInfo) {
-                console.warn(`找不到負責人 "${task.assignee}" 的聯絡資訊，將跳過此任務的通知。`);
-                continue;
-            }
-
-            if (!assigneeInfo.lineId && !assigneeInfo.gmail) {
-                 alert(`負責人 "${assigneeInfo.name}" 尚未設定 Line 或 Gmail 聯絡資訊，無法發送通知。請先至「管理負責人聯絡資訊」面板中設定。`);
-                 return; // 中斷發送流程
-            }
-
-            if (!notificationsMap.has(assigneeInfo.name)) {
-                notificationsMap.set(assigneeInfo.name, { assignee: assigneeInfo, tasks: [] });
-            }
-            notificationsMap.get(assigneeInfo.name)!.tasks.push(task);
-        }
-
-        const notificationPayloads: NotificationPayload[] = Array.from(notificationsMap.values());
-        
-        if (notificationPayloads.length === 0) {
-            alert('所有任務負責人均未設定聯絡資訊，無法發送任何通知。');
-            return;
-        }
-
-        await triggerNotificationService(notificationPayloads, (update) => {
-            setBackendStatus(prevStatus => ({
-                ...prevStatus!,
-                [update.step]: update.message,
-            }));
-        });
-    }, [backendStatus, tasks, assignees]);
-
-    const handleUpdateTasks = useCallback((newTasks: Task[]) => {
-        setTasks(newTasks);
-    }, []);
-
-    const handleDeleteTasks = useCallback((taskIds: string[]) => {
-        if (tasks) {
-            const updatedTasks = tasks.filter(task => !taskIds.includes(task.id));
-            setTasks(updatedTasks.length > 0 ? updatedTasks : null);
-        }
-    }, [tasks]);
-
-    const handleUpdateSummary = useCallback((newSummary: string) => {
-        setSummary(newSummary);
-    }, []);
+    const [message, setMessage] = useState('AI 任務派遣中心已載入');
 
     return (
-        <div className="max-w-6xl mx-auto p-4 md:p-8">
-            <Header />
+        <div style={{ 
+            padding: '20px', 
+            fontFamily: 'Arial, sans-serif',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            minHeight: '100vh'
+        }}>
+            <div style={{
+                maxWidth: '1200px',
+                margin: '0 auto',
+                background: 'white',
+                borderRadius: '20px',
+                padding: '40px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+            }}>
+                <header style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h1 style={{ 
+                        fontSize: '2.5em', 
+                        marginBottom: '10px',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                    }}>
+                        🤖 AI 任務派遣中心
+                    </h1>
+                    <p style={{ fontSize: '1.2em', color: '#666' }}>
+                        智慧型任務分析、自動指派與多平台通知系統
+                    </p>
+                </header>
 
-            <div className="text-right mb-4 -mt-6">
-                <button
-                    onClick={() => setIsManagerOpen(true)}
-                    className="px-4 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition shadow-sm"
-                >
-                    管理負責人聯絡資訊
-                </button>
+                <main>
+                    <div style={{
+                        background: '#f8f9fa',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        marginBottom: '30px'
+                    }}>
+                        <h2 style={{ 
+                            color: '#333', 
+                            marginBottom: '20px', 
+                            fontSize: '1.5em' 
+                        }}>
+                            🎤 音訊輸入測試
+                        </h2>
+                        <p style={{ color: '#666', marginBottom: '20px' }}>
+                            如果您看到這個頁面，表示 React 應用已成功載入！
+                        </p>
+                        <button 
+                            onClick={() => setMessage('按鈕點擊成功！React 功能正常')}
+                            style={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '15px 30px',
+                                borderRadius: '8px',
+                                fontSize: '16px',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            測試按鈕
+                        </button>
+                        <p style={{ 
+                            marginTop: '20px', 
+                            padding: '15px', 
+                            background: '#e8f5e8', 
+                            borderRadius: '8px',
+                            color: '#2d5a2d'
+                        }}>
+                            {message}
+                        </p>
+                    </div>
+
+                    <div style={{
+                        background: '#fff3cd',
+                        border: '2px solid #ffeaa7',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        marginBottom: '30px'
+                    }}>
+                        <h2 style={{ color: '#856404', marginBottom: '20px' }}>
+                            🎙️ 音訊功能狀態
+                        </h2>
+                        <p style={{ color: '#856404' }}>
+                            音訊輸入組件將在此處顯示（如果載入成功）
+                        </p>
+                    </div>
+                </main>
             </div>
-
-            <main>
-                <AudioProcessor onTranscriptionComplete={handleAudioTranscription} />
-                <InputSection onProcess={handleAnalyze} isLoading={isAnalyzing} />
-                {isAnalyzing && <LoadingSpinner />}
-                <OutputSection 
-                    tasks={tasks} 
-                    summary={summary} 
-                    backendStatus={backendStatus} 
-                    error={error}
-                    onUpdateTasks={handleUpdateTasks}
-                    onDeleteTasks={handleDeleteTasks}
-                    onUpdateSummary={handleUpdateSummary}
-                    onDispatch={handleDispatch}
-                    isDispatching={isDispatching}
-                    onSendNotification={handleSendNotification}
-                />
-            </main>
-            
-            <AssigneeManager
-                isOpen={isManagerOpen}
-                onClose={() => setIsManagerOpen(false)}
-                assignees={assignees}
-                onSave={setAssignees}
-            />
         </div>
     );
 };
