@@ -37,6 +37,23 @@ const upload = multer({
     },
 });
 
+// 根路由
+app.get('/', (req, res) => {
+    res.status(200).json({ 
+        message: 'AI Task Dispatch Center Backend API',
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+        region: process.env.GOOGLE_CLOUD_REGION || 'unknown',
+        endpoints: {
+            health: '/health',
+            dispatch: '/api/dispatch',
+            notify: '/api/notify',
+            transcribe: '/api/transcribe'
+        }
+    });
+});
+
 // 健康檢查端點
 app.get('/health', (req, res) => {
     res.status(200).json({ 
