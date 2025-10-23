@@ -21,12 +21,13 @@ interface AudioFile {
 }
 
 export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionComplete }) => {
-    // 語音輸入狀態
+    // 語音自然語言輸入狀態
     const [isVoiceInput, setIsVoiceInput] = useState(false);
     const [voiceText, setVoiceText] = useState('');
     
-    // 錄音狀態
+    // 長錄音狀態
     const [isRecording, setIsRecording] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const [currentFileIndex, setCurrentFileIndex] = useState(0);
     
@@ -43,8 +44,9 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
     const audioChunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const accumulatedTimeRef = useRef<number>(0);
 
-    // 語音輸入功能
+    // 語音自然語言輸入功能
     const startVoiceInput = useCallback(() => {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             alert('您的瀏覽器不支援語音識別功能');
@@ -54,7 +56,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         
-        recognition.continuous = true;
+        recognition.continuous = false; // 簡短任務，不需要連續識別
         recognition.interimResults = true;
         recognition.lang = 'zh-TW';
 
@@ -99,7 +101,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
         }
     }, []);
 
-    // 錄音功能
+    // 長錄音功能
     const startRecording = useCallback(async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -130,7 +132,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                 
                 const newFile: AudioFile = {
                     id: `recording_${timestamp.getTime()}`,
-                    name: `錄音檔案_${currentFileIndex + 1}_${formatTime(duration)}`,
+                    name: `長錄音_${currentFileIndex + 1}_${formatTime(duration)}`,
                     blob: audioBlob,
                     duration: duration,
                     timestamp: timestamp
@@ -143,22 +145,23 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
             
             mediaRecorder.start(1000); // 每秒收集一次數據
             setIsRecording(true);
+            setIsPaused(false);
             setRecordingTime(0);
+            accumulatedTimeRef.current = 0;
             
             // 開始計時
             timerRef.current = setInterval(() => {
                 setRecordingTime(prev => {
                     const newTime = prev + 1;
-                    // 每10分鐘自動換檔
+                    // 每10分鐘自動分檔
                     if (newTime % 600 === 0) {
-                        // 停止當前錄音
+                        // 停止當前錄音並開始新的錄音
                         if (mediaRecorderRef.current && isRecording) {
                             mediaRecorderRef.current.stop();
+                            setTimeout(() => {
+                                startRecording();
+                            }, 1000);
                         }
-                        // 延遲1秒後開始新的錄音
-                        setTimeout(() => {
-                            startRecording();
-                        }, 1000);
                     }
                     return newTime;
                 });
@@ -170,10 +173,44 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
         }
     }, [recordingTime, currentFileIndex, isRecording]);
 
+    const pauseRecording = useCallback(() => {
+        if (mediaRecorderRef.current && isRecording && !isPaused) {
+            mediaRecorderRef.current.pause();
+            setIsPaused(true);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        }
+    }, [isRecording, isPaused]);
+
+    const resumeRecording = useCallback(() => {
+        if (mediaRecorderRef.current && isRecording && isPaused) {
+            mediaRecorderRef.current.resume();
+            setIsPaused(false);
+            // 重新開始計時
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => {
+                    const newTime = prev + 1;
+                    if (newTime % 600 === 0) {
+                        if (mediaRecorderRef.current && isRecording) {
+                            mediaRecorderRef.current.stop();
+                            setTimeout(() => {
+                                startRecording();
+                            }, 1000);
+                        }
+                    }
+                    return newTime;
+                });
+            }, 1000);
+        }
+    }, [isRecording, isPaused]);
+
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
+            setIsPaused(false);
             
             if (timerRef.current) {
                 clearInterval(timerRef.current);
@@ -181,6 +218,18 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
             }
         }
     }, [isRecording]);
+
+    // 下載檔案
+    const downloadFile = useCallback((file: AudioFile) => {
+        const url = URL.createObjectURL(file.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${file.name}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, []);
 
     // 檔案選擇功能
     const toggleFileSelection = useCallback((fileId: string) => {
@@ -287,9 +336,9 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
             <h2 className="text-xl font-semibold mb-4 text-yellow-800">🎤 音訊輸入</h2>
             
             <div className="space-y-6">
-                {/* 語音輸入區 */}
+                {/* 語音自然語言輸入 */}
                 <div className="bg-white p-4 rounded-lg border">
-                    <h3 className="font-medium mb-3 text-gray-800">🎤 語音即時輸入</h3>
+                    <h3 className="font-medium mb-3 text-gray-800">🎤 語音自然語言輸入（簡短工作任務）</h3>
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <button
@@ -333,11 +382,11 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                     </div>
                 </div>
 
-                {/* 錄音區 */}
+                {/* 長錄音模式 */}
                 <div className="bg-white p-4 rounded-lg border">
-                    <h3 className="font-medium mb-3 text-gray-800">🎙️ 錄音功能</h3>
+                    <h3 className="font-medium mb-3 text-gray-800">🎙️ 長錄音模式</h3>
                     <div className="space-y-3">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                             <button
                                 onClick={isRecording ? stopRecording : startRecording}
                                 disabled={isProcessing}
@@ -351,10 +400,21 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                             </button>
                             
                             {isRecording && (
+                                <>
+                                    <button
+                                        onClick={isPaused ? resumeRecording : pauseRecording}
+                                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition"
+                                    >
+                                        {isPaused ? '▶️ 繼續錄音' : '⏸️ 暫停錄音'}
+                                    </button>
+                                </>
+                            )}
+                            
+                            {isRecording && (
                                 <div className="flex items-center gap-2 text-red-600">
                                     <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                                     <span className="font-mono text-lg">{formatTime(recordingTime)}</span>
-                                    <span className="text-sm">(每10分鐘自動換檔)</span>
+                                    <span className="text-sm">(每10分鐘自動分檔)</span>
                                 </div>
                             )}
                         </div>
@@ -404,12 +464,20 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                                                 </div>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => deleteFile(file.id)}
-                                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-                                        >
-                                            🗑️ 刪除
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => downloadFile(file)}
+                                                className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                                            >
+                                                💾 下載
+                                            </button>
+                                            <button
+                                                onClick={() => deleteFile(file.id)}
+                                                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
+                                            >
+                                                🗑️ 刪除
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -474,11 +542,12 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                 <div className="text-sm text-gray-600 bg-white p-3 rounded-lg border">
                     <strong>使用說明：</strong>
                     <ul className="list-disc list-inside mt-1 space-y-1">
-                        <li><strong>🎤 語音輸入：</strong>即時語音轉文字，適合快速輸入，結果即時顯示</li>
-                        <li><strong>🎙️ 錄音功能：</strong>錄製音訊檔案，支援長時間錄音，每10分鐘自動換檔</li>
-                        <li><strong>📁 檔案管理：</strong>可查看、選擇、刪除錄音檔案，支援全選/清除選擇</li>
-                        <li><strong>📝 批次轉錄：</strong>可選擇多個檔案同時轉錄，轉錄結果統一顯示</li>
-                        <li><strong>✅ 結果應用：</strong>轉錄完成後可選擇使用結果或清除重新轉錄</li>
+                        <li><strong>🎤 語音自然語言輸入：</strong>適合簡短工作任務，即時語音轉文字</li>
+                        <li><strong>🎙️ 長錄音模式：</strong>支援長時間錄音，計時顯示，暫停/繼續功能</li>
+                        <li><strong>⏸️ 暫停功能：</strong>可暫停錄音並繼續，不會中斷計時</li>
+                        <li><strong>📁 自動分檔：</strong>每10分鐘自動分段，避免檔案過大</li>
+                        <li><strong>💾 下載存檔：</strong>可下載錄音檔案到本地</li>
+                        <li><strong>📝 直接轉錄：</strong>可選擇檔案直接轉錄為文字</li>
                     </ul>
                 </div>
             </div>
