@@ -81,17 +81,23 @@ jobs:
         # 上傳建構好的前端檔案，並設定正確的 MIME 類型
         gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
         
-        # 設定 JavaScript 文件的 MIME 類型
-        gsutil -m setmeta -h "Content-Type:application/javascript" gs://$BUCKET_NAME/**/*.js
-        gsutil -m setmeta -h "Content-Type:application/javascript" gs://$BUCKET_NAME/**/*.mjs
-        gsutil -m setmeta -h "Content-Type:text/css" gs://$BUCKET_NAME/**/*.css
-        gsutil -m setmeta -h "Content-Type:application/json" gs://$BUCKET_NAME/**/*.json
-        gsutil -m setmeta -h "Content-Type:image/svg+xml" gs://$BUCKET_NAME/**/*.svg
-        gsutil -m setmeta -h "Content-Type:image/png" gs://$BUCKET_NAME/**/*.png
-        gsutil -m setmeta -h "Content-Type:image/jpeg" gs://$BUCKET_NAME/**/*.jpg
-        gsutil -m setmeta -h "Content-Type:image/jpeg" gs://$BUCKET_NAME/**/*.jpeg
-        gsutil -m setmeta -h "Content-Type:image/gif" gs://$BUCKET_NAME/**/*.gif
-        gsutil -m setmeta -h "Content-Type:image/webp" gs://$BUCKET_NAME/**/*.webp
+        # 設定文件 MIME 類型（只設定實際存在的文件）
+        echo "設定 JavaScript 文件 MIME 類型..."
+        gsutil -m setmeta -h "Content-Type:application/javascript" gs://$BUCKET_NAME/**/*.js || echo "沒有 .js 文件"
+        
+        echo "設定 CSS 文件 MIME 類型..."
+        gsutil -m setmeta -h "Content-Type:text/css" gs://$BUCKET_NAME/**/*.css || echo "沒有 .css 文件"
+        
+        echo "設定 JSON 文件 MIME 類型..."
+        gsutil -m setmeta -h "Content-Type:application/json" gs://$BUCKET_NAME/**/*.json || echo "沒有 .json 文件"
+        
+        echo "設定圖片文件 MIME 類型..."
+        gsutil -m setmeta -h "Content-Type:image/svg+xml" gs://$BUCKET_NAME/**/*.svg || echo "沒有 .svg 文件"
+        gsutil -m setmeta -h "Content-Type:image/png" gs://$BUCKET_NAME/**/*.png || echo "沒有 .png 文件"
+        gsutil -m setmeta -h "Content-Type:image/jpeg" gs://$BUCKET_NAME/**/*.jpg || echo "沒有 .jpg 文件"
+        gsutil -m setmeta -h "Content-Type:image/jpeg" gs://$BUCKET_NAME/**/*.jpeg || echo "沒有 .jpeg 文件"
+        gsutil -m setmeta -h "Content-Type:image/gif" gs://$BUCKET_NAME/**/*.gif || echo "沒有 .gif 文件"
+        gsutil -m setmeta -h "Content-Type:image/webp" gs://$BUCKET_NAME/**/*.webp || echo "沒有 .webp 文件"
 
         # 設定公開存取權限
         gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME/
