@@ -34,14 +34,10 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       
-    - name: Build and deploy with Cloud Build
-      run: |
-        gcloud builds submit --tag gcr.io/${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}/ai-dispatch-backend ./backend
-        
-    - name: Deploy to Cloud Run
+    - name: Deploy to Cloud Run (Direct)
       run: |
         gcloud run deploy ai-dispatch-backend \
-          --image gcr.io/${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}/ai-dispatch-backend \
+          --source ./backend \
           --platform managed \
           --region asia-east1 \
           --allow-unauthenticated \
