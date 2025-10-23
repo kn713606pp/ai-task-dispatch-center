@@ -45,8 +45,7 @@ jobs:
           --cpu 2 \
           --timeout 3600 \
           --max-instances 10 \
-          --service-account=ai-dispatch-service@${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com \
-          --no-use-google-cloud-build
+          --service-account=ai-dispatch-service@${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com
           
     - name: Deploy frontend to Cloud Storage
       run: |
