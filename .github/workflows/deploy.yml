@@ -1,14 +1,9 @@
-name: Deploy to Google Cloud Run
+name: Deploy to Google Cloud
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
-env:
-  PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
-  REGION: asia-east1
-  SERVICE_NAME: ai-dispatch-backend
 
 jobs:
   deploy:
@@ -41,14 +36,14 @@ jobs:
       
     - name: Build and deploy with Cloud Build
       run: |
-        gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME ./backend
+        gcloud builds submit --tag gcr.io/${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}/ai-dispatch-backend ./backend
         
     - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy $SERVICE_NAME \
-          --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
+        gcloud run deploy ai-dispatch-backend \
+          --image gcr.io/${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}/ai-dispatch-backend \
           --platform managed \
-          --region $REGION \
+          --region asia-east1 \
           --allow-unauthenticated \
           --memory 4Gi \
           --cpu 2 \
@@ -58,15 +53,15 @@ jobs:
           
     - name: Deploy frontend to Cloud Storage
       run: |
-        gsutil mb gs://$PROJECT_ID-ai-dispatch-frontend/ || true
-        gsutil web set -m index.html -e 404.html gs://$PROJECT_ID-ai-dispatch-frontend/
-        gsutil -m cp -r ./dist/* gs://$PROJECT_ID-ai-dispatch-frontend/
-        gsutil -m rsync -r -d ./dist/ gs://$PROJECT_ID-ai-dispatch-frontend/
-        gsutil iam ch allUsers:objectViewer gs://$PROJECT_ID-ai-dispatch-frontend/
+        gsutil mb gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/ || true
+        gsutil web set -m index.html -e 404.html gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        gsutil -m cp -r ./dist/* gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        gsutil -m rsync -r -d ./dist/ gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
+        gsutil iam ch allUsers:objectViewer gs://${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/
         
     - name: Get deployment URLs
       run: |
-        BACKEND_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
-        FRONTEND_URL="https://storage.googleapis.com/$PROJECT_ID-ai-dispatch-frontend/index.html"
+        BACKEND_URL=$(gcloud run services describe ai-dispatch-backend --platform managed --region asia-east1 --format 'value(status.url)')
+        FRONTEND_URL="https://storage.googleapis.com/${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}-ai-dispatch-frontend/index.html"
         echo "Backend URL: $BACKEND_URL"
         echo "Frontend URL: $FRONTEND_URL"
