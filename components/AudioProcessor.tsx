@@ -43,7 +43,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const recognitionRef = useRef<any>(null);
     const accumulatedTimeRef = useRef<number>(0);
 
     // 語音自然語言輸入功能
@@ -271,7 +271,7 @@ export const AudioProcessor: React.FC<AudioProcessorProps> = ({ onTranscriptionC
                 formData.append('mimeType', 'audio/webm');
                 formData.append('languageCode', 'zh-TW');
                 
-                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+                const apiBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001';
                 const response = await fetch(`${apiBaseUrl}/api/transcribe`, {
                     method: 'POST',
                     body: formData

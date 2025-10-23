@@ -15,7 +15,7 @@ export const triggerDataPersistenceWorkflow = async (
         onProgressUpdate({ step: 'firestore', message: '1. 派遣任務至後端系統...' });
 
         // 對後端 /api/dispatch 端點發送真實的網路請求
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+        const apiBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001';
         const response = await fetch(`${apiBaseUrl}/api/dispatch`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -53,7 +53,7 @@ export const triggerNotificationService = async (
         onProgressUpdate({ step: 'notification', message: '4. 發送通知給任務負責人...' });
 
         // 對後端 /api/notify 端點發送真實的網路請求
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+        const apiBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001';
         const response = await fetch(`${apiBaseUrl}/api/notify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

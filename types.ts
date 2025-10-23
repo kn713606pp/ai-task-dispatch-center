@@ -1,4 +1,5 @@
 export interface Task {
+    id: string;
     title: string;
     description: string;
     priority: '緊急' | '高' | '中' | '低';

@@ -154,7 +154,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({
                                     <div className="grid grid-cols-2 gap-3">
                                         <select
                                             value={tempTaskData.priority || task.priority}
-                                            onChange={(e) => setTempTaskData({...tempTaskData, priority: e.target.value})}
+                                            onChange={(e) => setTempTaskData({...tempTaskData, priority: e.target.value as '緊急' | '高' | '中' | '低'})}
                                             className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                                         >
                                             <option value="低">低</option>

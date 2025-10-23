@@ -12,10 +12,10 @@ export const processInputs = async (text: string, url: string, files: File[], ma
         const inputContent = text || manualTask || '從音訊轉錄的任務';
         
         // 第一層：特殊指令與優先級判斷
-        let priority = '中';
+        let priority: '緊急' | '高' | '中' | '低' = '中';
         let category = '待分配';
         let assignee = '艾蜜莉';
-        let dueDate = null;
+        let dueDate: string | null = null;
         let title = inputContent;
         let description = inputContent;
         
