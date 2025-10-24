@@ -16,11 +16,12 @@ const corsOptions = {
     origin: [
         'https://storage.googleapis.com', // Google Cloud Storage 域名
         'https://storage.googleapis.com/*', // 所有 Cloud Storage 子域名
-        'http://localhost:3000' // 開發環境
+        'http://localhost:3000', // 開發環境
+        '*' // 暫時允許所有來源，用於調試
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 };
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
@@ -220,14 +221,25 @@ app.post('/api/notify', async (req, res) => {
     }
 });
 
+// 調試端點 - 檢查 API 是否可用
+app.get('/api/debug', (req, res) => {
+    res.json({
+        message: 'AI 分析 API 端點正常',
+        timestamp: new Date().toISOString(),
+        endpoints: ['/api/analyze', '/api/debug']
+    });
+});
+
 // AI 分析端點
 app.post('/api/analyze', async (req, res) => {
     try {
         console.log('收到 AI 分析請求');
+        console.log('請求體:', JSON.stringify(req.body, null, 2));
         
         const { text, timestamp } = req.body;
         
         if (!text || !text.trim()) {
+            console.log('錯誤: 沒有收到要分析的文字內容');
             return res.status(400).json({ 
                 success: false, 
                 message: '沒有收到要分析的文字內容' 

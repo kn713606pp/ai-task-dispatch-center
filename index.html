@@ -1098,6 +1098,8 @@
             
             try {
                 // 調用後端 API 進行 AI 分析
+                console.log('發送 AI 分析請求:', { text: text.substring(0, 50) + '...', timestamp: new Date().toISOString() });
+                
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: {
@@ -1109,6 +1111,8 @@
                         timestamp: new Date().toISOString()
                     })
                 });
+                
+                console.log('收到響應:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     let errorMessage = `HTTP error! status: ${response.status}`;
@@ -1652,9 +1656,42 @@
             }, 5000);
         }
         
+        // 檢查後端狀態
+        async function checkBackendStatus() {
+            try {
+                // 先檢查基本健康狀態
+                const healthResponse = await fetch('/health');
+                if (!healthResponse.ok) {
+                    console.error('基本健康檢查失敗:', healthResponse.status);
+                    return false;
+                }
+                
+                // 檢查 AI 分析端點
+                const debugResponse = await fetch('/api/debug');
+                if (debugResponse.ok) {
+                    const data = await debugResponse.json();
+                    console.log('AI 分析端點正常:', data);
+                    return true;
+                } else {
+                    console.error('AI 分析端點檢查失敗:', debugResponse.status);
+                    return false;
+                }
+            } catch (error) {
+                console.error('無法連接到後端:', error);
+                return false;
+            }
+        }
+        
         // 載入通知設定
         document.addEventListener('DOMContentLoaded', function() {
             loadNotificationSettings();
+            
+            // 檢查後端狀態
+            checkBackendStatus().then(isHealthy => {
+                if (!isHealthy) {
+                    showErrorMessage('⚠️ 後端連接問題', '無法連接到後端服務，AI 分析功能可能無法正常運作。請檢查後端服務狀態。');
+                }
+            });
         });
     </script>
 </body>
