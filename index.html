@@ -345,6 +345,78 @@
             text-align: center;
         }
         
+        /* 任務派遣與通知樣式 */
+        .dispatch-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .dispatch-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .backend-status {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .status-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4facfe;
+            background: #f8f9ff;
+        }
+        
+        .notification-settings {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .assignee-list {
+            margin: 15px 0;
+        }
+        
+        .assignee-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            align-items: center;
+        }
+        
+        .assignee-item label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .assignee-item input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .assignee-item input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
         @media (max-width: 768px) {
             .voice-section {
                 grid-template-columns: 1fr;
@@ -559,6 +631,58 @@
             <div id="taskResult" class="hidden">
                 <h3>📋 任務分析結果</h3>
                 <div id="taskContent"></div>
+                
+                <!-- 任務派遣與通知 -->
+                <div id="dispatchSection" class="dispatch-section hidden">
+                    <h3>🚀 任務派遣與通知</h3>
+                    <div class="dispatch-controls">
+                        <button class="button" onclick="dispatchTasks()">📤 派遣任務至後端</button>
+                        <button class="button" onclick="sendNotifications()">📧 發送通知給負責人</button>
+                        <button class="button" onclick="viewTaskStatus()">📊 查看任務狀態</button>
+                    </div>
+                    
+                    <!-- 後端狀態 -->
+                    <div id="backendStatus" class="backend-status hidden">
+                        <h4>後端執行狀態</h4>
+                        <div id="statusList"></div>
+                    </div>
+                    
+                    <!-- 負責人通知設定 -->
+                    <div id="notificationSettings" class="notification-settings hidden">
+                        <h4>📧 負責人通知設定</h4>
+                        <div class="assignee-list">
+                            <div class="assignee-item">
+                                <label>艾蜜莉 (品質/法務)</label>
+                                <input type="email" placeholder="Gmail 地址" id="emily-gmail">
+                                <input type="text" placeholder="Line ID" id="emily-line">
+                            </div>
+                            <div class="assignee-item">
+                                <label>班傑明 (研發/能設)</label>
+                                <input type="email" placeholder="Gmail 地址" id="benjamin-gmail">
+                                <input type="text" placeholder="Line ID" id="benjamin-line">
+                            </div>
+                            <div class="assignee-item">
+                                <label>克蘿伊 (運籌/職安)</label>
+                                <input type="email" placeholder="Gmail 地址" id="chloe-gmail">
+                                <input type="text" placeholder="Line ID" id="chloe-line">
+                            </div>
+                            <div class="assignee-item">
+                                <label>丹尼爾 (代工)</label>
+                                <input type="email" placeholder="Gmail 地址" id="daniel-gmail">
+                                <input type="text" placeholder="Line ID" id="daniel-line">
+                            </div>
+                            <div class="assignee-item">
+                                <label>奥莉薇亞 (人資/行政/總務)</label>
+                                <input type="email" placeholder="Gmail 地址" id="olivia-gmail">
+                                <input type="text" placeholder="Line ID" id="olivia-line">
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button class="button" onclick="saveNotificationSettings()">💾 儲存設定</button>
+                            <button class="button" onclick="testNotifications()">🧪 測試通知</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -855,14 +979,22 @@
         function downloadFile(fileId) {
             const file = audioFiles.find(f => f.id === fileId);
             if (file) {
-                const url = URL.createObjectURL(file.blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${file.name}.webm`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                try {
+                    const url = URL.createObjectURL(file.blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${file.name}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // 顯示成功訊息
+                    showSuccessMessage('✅ 錄音檔案已成功下載！', `檔案 "${file.name}" 已儲存至您的下載資料夾`);
+                } catch (error) {
+                    console.error('下載錯誤:', error);
+                    showErrorMessage('❌ 下載失敗', '無法下載錄音檔案：' + error.message);
+                }
             }
         }
         
@@ -929,47 +1061,92 @@
         function downloadTranscription() {
             const transcription = document.getElementById('transcriptionText').textContent;
             if (transcription.trim() && transcription !== '轉逐字稿結果將顯示在此處...') {
-                const blob = new Blob([transcription], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `逐字稿_${new Date().toISOString().split('T')[0]}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                try {
+                    const blob = new Blob([transcription], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `逐字稿_${new Date().toISOString().split('T')[0]}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // 顯示成功訊息
+                    showSuccessMessage('✅ 逐字稿檔案已成功下載！', '逐字稿已儲存至您的下載資料夾');
+                } catch (error) {
+                    console.error('下載錯誤:', error);
+                    showErrorMessage('❌ 下載失敗', '無法下載逐字稿檔案：' + error.message);
+                }
             } else {
-                alert('沒有逐字稿內容可下載');
+                showErrorMessage('❌ 下載失敗', '沒有逐字稿內容可下載');
             }
         }
         
         // 任務處理
-        function processTask(text) {
+        async function processTask(text) {
             if (!text.trim()) {
                 alert('請輸入任務描述');
                 return;
             }
             
-            // 模擬 AI 分析
-            const result = {
-                tasks: [{
-                    title: '【語音任務】' + text.substring(0, 30) + '...',
-                    description: text,
-                    priority: '中',
-                    status: '待辦事項',
-                    category: '語音輸入',
-                    assignee: '艾蜜莉',
-                    dueDate: new Date().toISOString().split('T')[0]
-                }],
-                summary: '這是基於語音輸入的任務分析結果。'
-            };
+            // 顯示處理中狀態
+            const resultDiv = document.getElementById('taskResult');
+            const contentDiv = document.getElementById('taskContent');
+            resultDiv.classList.remove('hidden');
+            contentDiv.innerHTML = '<div class="status processing">🔄 正在使用 Gemini 2.5 Flash 分析任務...</div>';
             
-            displayTaskResult(result);
+            try {
+                // 調用後端 API 進行 AI 分析
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                displayTaskResult(result);
+                
+            } catch (error) {
+                console.error('AI 分析錯誤:', error);
+                
+                // 顯示錯誤訊息，不使用模擬結果
+                contentDiv.innerHTML = `
+                    <div class="status error">
+                        <h4>❌ AI 分析失敗</h4>
+                        <p><strong>錯誤原因：</strong> ${error.message}</p>
+                        <p><strong>可能原因：</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>後端服務未啟動或無法連接</li>
+                            <li>Gemini API 金鑰未設定或無效</li>
+                            <li>網路連接問題</li>
+                            <li>後端 API 端點錯誤</li>
+                        </ul>
+                        <p><strong>建議解決方案：</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>檢查後端服務是否正常運行</li>
+                            <li>確認 Gemini API 金鑰設定正確</li>
+                            <li>檢查網路連接狀態</li>
+                            <li>聯繫系統管理員</li>
+                        </ul>
+                    </div>
+                `;
+            }
         }
         
         function displayTaskResult(result) {
             const resultDiv = document.getElementById('taskResult');
             const contentDiv = document.getElementById('taskContent');
+            const dispatchSection = document.getElementById('dispatchSection');
             
             let html = '<div style="background: #e9ecef; padding: 20px; border-radius: 8px; margin: 15px 0;">';
             html += '<h4>📋 任務列表</h4>';
@@ -989,6 +1166,240 @@
             
             contentDiv.innerHTML = html;
             resultDiv.classList.remove('hidden');
+            dispatchSection.classList.remove('hidden');
+            
+            // 儲存任務結果供後續使用
+            window.currentTaskResult = result;
+        }
+        
+        // 任務派遣功能
+        async function dispatchTasks() {
+            if (!window.currentTaskResult) {
+                alert('沒有可派遣的任務');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('backendStatus');
+            const statusList = document.getElementById('statusList');
+            
+            statusDiv.classList.remove('hidden');
+            statusList.innerHTML = '<div class="status-item">🔄 正在派遣任務至後端系統...</div>';
+            
+            try {
+                const response = await fetch('/api/dispatch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tasks: window.currentTaskResult.tasks,
+                        summary: window.currentTaskResult.summary
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // 顯示派遣結果
+                statusList.innerHTML = `
+                    <div class="status-item">✅ Firestore: ${result.firestore || '任務已儲存至 Firestore'}</div>
+                    <div class="status-item">✅ Google Sheets: ${result.sheets || '任務已新增至 Google Sheets'}</div>
+                    <div class="status-item">✅ Google Docs: ${result.docs || '任務文件已建立'}</div>
+                    <div class="status-item">⏳ 通知: 等待手動觸發負責人通知</div>
+                `;
+                
+            } catch (error) {
+                console.error('任務派遣錯誤:', error);
+                statusList.innerHTML = `
+                    <div class="status-item error">
+                        <h4>❌ 任務派遣失敗</h4>
+                        <p><strong>錯誤原因：</strong> ${error.message}</p>
+                        <p><strong>可能原因：</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>後端服務未啟動或無法連接</li>
+                            <li>Firestore 連接問題</li>
+                            <li>Google Sheets API 設定錯誤</li>
+                            <li>Google Docs API 權限問題</li>
+                        </ul>
+                        <p><strong>建議解決方案：</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>檢查後端服務狀態</li>
+                            <li>確認 Google Cloud 服務設定</li>
+                            <li>檢查 API 金鑰和權限</li>
+                            <li>聯繫系統管理員</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        // 發送通知功能
+        async function sendNotifications() {
+            if (!window.currentTaskResult) {
+                alert('沒有可通知的任務');
+                return;
+            }
+            
+            const statusList = document.getElementById('statusList');
+            statusList.innerHTML += '<div class="status-item">📧 正在發送通知給負責人...</div>';
+            
+            try {
+                // 收集負責人通知資訊
+                const notifications = [];
+                const assignees = ['emily', 'benjamin', 'chloe', 'daniel', 'olivia'];
+                
+                assignees.forEach(assignee => {
+                    const gmail = document.getElementById(`${assignee}-gmail`).value;
+                    const lineId = document.getElementById(`${assignee}-line`).value;
+                    
+                    if (gmail || lineId) {
+                        notifications.push({
+                            assignee: assignee,
+                            gmail: gmail,
+                            lineId: lineId,
+                            tasks: window.currentTaskResult.tasks.filter(task => 
+                                task.assignee.toLowerCase().includes(assignee)
+                            )
+                        });
+                    }
+                });
+                
+                if (notifications.length === 0) {
+                    alert('請先設定負責人的聯絡資訊');
+                    return;
+                }
+                
+                const response = await fetch('/api/notify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        notifications: notifications
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                statusList.innerHTML += '<div class="status-item">✅ 通知已發送: ' + result.message + '</div>';
+                
+            } catch (error) {
+                console.error('通知發送錯誤:', error);
+                statusList.innerHTML += `
+                    <div class="status-item error">
+                        <h4>❌ 通知發送失敗</h4>
+                        <p><strong>錯誤原因：</strong> ${error.message}</p>
+                        <p><strong>可能原因：</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Gmail API 設定錯誤或權限不足</li>
+                            <li>Line Notify API 金鑰無效</li>
+                            <li>負責人聯絡資訊設定錯誤</li>
+                            <li>網路連接問題</li>
+                        </ul>
+                        <p><strong>建議解決方案：</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>檢查 Gmail 和 Line API 設定</li>
+                            <li>確認負責人聯絡資訊正確</li>
+                            <li>檢查網路連接狀態</li>
+                            <li>聯繫系統管理員</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        // 查看任務狀態
+        function viewTaskStatus() {
+            const statusDiv = document.getElementById('backendStatus');
+            const statusList = document.getElementById('statusList');
+            
+            statusDiv.classList.remove('hidden');
+            statusList.innerHTML = `
+                <div class="status-item">📊 任務狀態總覽</div>
+                <div class="status-item">📋 總任務數: ${window.currentTaskResult?.tasks?.length || 0}</div>
+                <div class="status-item">👥 涉及負責人: ${getUniqueAssignees()}</div>
+                <div class="status-item">⏰ 建立時間: ${new Date().toLocaleString()}</div>
+            `;
+        }
+        
+        function getUniqueAssignees() {
+            if (!window.currentTaskResult?.tasks) return '無';
+            const assignees = [...new Set(window.currentTaskResult.tasks.map(task => task.assignee))];
+            return assignees.join(', ');
+        }
+        
+        // 儲存通知設定
+        function saveNotificationSettings() {
+            const settings = {};
+            const assignees = ['emily', 'benjamin', 'chloe', 'daniel', 'olivia'];
+            
+            assignees.forEach(assignee => {
+                settings[assignee] = {
+                    gmail: document.getElementById(`${assignee}-gmail`).value,
+                    lineId: document.getElementById(`${assignee}-line`).value
+                };
+            });
+            
+            localStorage.setItem('notificationSettings', JSON.stringify(settings));
+            alert('通知設定已儲存！');
+        }
+        
+        // 載入通知設定
+        function loadNotificationSettings() {
+            const settings = JSON.parse(localStorage.getItem('notificationSettings') || '{}');
+            const assignees = ['emily', 'benjamin', 'chloe', 'daniel', 'olivia'];
+            
+            assignees.forEach(assignee => {
+                if (settings[assignee]) {
+                    document.getElementById(`${assignee}-gmail`).value = settings[assignee].gmail || '';
+                    document.getElementById(`${assignee}-line`).value = settings[assignee].lineId || '';
+                }
+            });
+        }
+        
+        // 測試通知
+        async function testNotifications() {
+            const assignees = ['emily', 'benjamin', 'chloe', 'daniel', 'olivia'];
+            let hasSettings = false;
+            
+            assignees.forEach(assignee => {
+                const gmail = document.getElementById(`${assignee}-gmail`).value;
+                const lineId = document.getElementById(`${assignee}-line`).value;
+                if (gmail || lineId) hasSettings = true;
+            });
+            
+            if (!hasSettings) {
+                alert('請先設定至少一個負責人的聯絡資訊');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/test-notify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: '這是一個測試通知，用於驗證通知系統是否正常運作。'
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('測試通知已發送！請檢查負責人的 Gmail 和 Line。');
+                } else {
+                    throw new Error('測試通知發送失敗');
+                }
+                
+            } catch (error) {
+                console.error('測試通知錯誤:', error);
+                alert('測試通知發送失敗: ' + error.message);
+            }
         }
         
         // 輸入方式切換
@@ -1181,6 +1592,57 @@
         
         // 初始化
         console.log('AI 任務派遣中心 - 多種輸入方式版載入成功');
+        
+        // 成功訊息顯示
+        function showSuccessMessage(title, message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification success';
+            notification.innerHTML = `
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h4 style="margin: 0 0 5px 0; font-size: 16px;">${title}</h4>
+                    <p style="margin: 0; font-size: 14px;">${message}</p>
+                </div>
+            `;
+            
+            // 插入到頁面頂部
+            const container = document.querySelector('.container');
+            container.insertBefore(notification, container.firstChild);
+            
+            // 3秒後自動移除
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+        
+        // 錯誤訊息顯示
+        function showErrorMessage(title, message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification error';
+            notification.innerHTML = `
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h4 style="margin: 0 0 5px 0; font-size: 16px;">${title}</h4>
+                    <p style="margin: 0; font-size: 14px;">${message}</p>
+                </div>
+            `;
+            
+            // 插入到頁面頂部
+            const container = document.querySelector('.container');
+            container.insertBefore(notification, container.firstChild);
+            
+            // 5秒後自動移除
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+        
+        // 載入通知設定
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotificationSettings();
+        });
     </script>
 </body>
 </html>
