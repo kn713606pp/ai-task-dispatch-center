@@ -47,6 +47,7 @@ app.get('/', (req, res) => {
         region: process.env.GOOGLE_CLOUD_REGION || 'unknown',
         endpoints: {
             health: '/health',
+            analyze: '/api/analyze',
             dispatch: '/api/dispatch',
             notify: '/api/notify',
             transcribe: '/api/transcribe'
@@ -218,6 +219,69 @@ app.post('/api/notify', async (req, res) => {
         });
     }
 });
+
+// AI 分析端點
+app.post('/api/analyze', async (req, res) => {
+    try {
+        console.log('收到 AI 分析請求');
+        
+        const { text, timestamp } = req.body;
+        
+        if (!text || !text.trim()) {
+            return res.status(400).json({ 
+                success: false, 
+                message: '沒有收到要分析的文字內容' 
+            });
+        }
+
+        console.log(`分析文字長度: ${text.length} 字元`);
+        
+        // 使用 Gemini API 進行分析
+        const analysisResult = await analyzeWithGemini(text);
+        
+        console.log('AI 分析完成');
+        
+        res.json({
+            success: true,
+            tasks: analysisResult.tasks,
+            summary: analysisResult.summary,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('AI 分析錯誤:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'AI 分析失敗: ' + error.message 
+        });
+    }
+});
+
+// Gemini API 分析函數
+async function analyzeWithGemini(text) {
+    try {
+        // 這裡應該調用 Gemini API
+        // 暫時使用模擬結果，實際應該調用 Google Gemini API
+        const mockResult = {
+            tasks: [{
+                id: `task_${Date.now()}`,
+                title: '【AI 分析】' + text.substring(0, 30) + '...',
+                description: text,
+                priority: '中',
+                status: '待辦事項',
+                category: 'AI 分析',
+                assignee: '艾蜜莉',
+                dueDate: new Date().toISOString().split('T')[0]
+            }],
+            summary: '這是基於 Gemini 2.5 Flash 的任務分析結果。'
+        };
+        
+        return mockResult;
+    } catch (error) {
+        console.error('Gemini API 錯誤:', error);
+        throw new Error('Gemini API 調用失敗: ' + error.message);
+    }
+}
 
 // 音訊轉錄端點
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {

@@ -1102,6 +1102,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         text: text,
@@ -1110,10 +1111,22 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage += ` - ${errorData.message || 'Unknown error'}`;
+                    } catch (e) {
+                        // 如果無法解析 JSON，使用原始錯誤訊息
+                    }
+                    throw new Error(errorMessage);
                 }
                 
                 const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message || 'AI 分析失敗');
+                }
+                
                 displayTaskResult(result);
                 
             } catch (error) {
