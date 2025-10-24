@@ -296,15 +296,17 @@
                     <h3>🎙️ 錄音功能</h3>
                     <div id="recordingStatus" class="status ready">準備錄音</div>
                     <div id="timer" class="timer hidden">00:00</div>
+                    
+                    <!-- 錄音控制按鍵 -->
                     <div class="controls">
                         <button id="startRecordBtn" class="button" onclick="startRecording()">
                             ⏺️ 開始錄音
                         </button>
                         <button id="pauseRecordBtn" class="button hidden" onclick="pauseRecording()">
-                            ⏸️ 暫停
+                            ⏸️ 暫停錄音
                         </button>
                         <button id="resumeRecordBtn" class="button hidden" onclick="resumeRecording()">
-                            ▶️ 繼續
+                            ▶️ 繼續錄音
                         </button>
                         <button id="stopRecordBtn" class="button hidden" onclick="stopRecording()">
                             ⏹️ 停止錄音
@@ -318,19 +320,23 @@
                         <div class="controls">
                             <button class="button btn-small" onclick="selectAllFiles()">全選</button>
                             <button class="button btn-small" onclick="clearSelection()">清除選擇</button>
-                            <button class="button btn-small" onclick="transcribeSelected()">轉錄選中</button>
+                            <button class="button btn-small" onclick="transcribeSelected()">轉逐字稿</button>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- 轉錄結果 -->
+            <!-- 轉逐字稿視窗 -->
             <div id="transcriptionSection" class="transcription-result hidden">
-                <h3>📝 轉錄結果</h3>
-                <div id="transcriptionText" class="transcription-text">轉錄結果將顯示在此處...</div>
+                <h3>📝 轉逐字稿結果</h3>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 10px; margin-bottom: 15px;">
+                    <strong>💡 提示：</strong> 轉逐字稿功能會將選中的錄音檔案轉換為文字內容，您可以使用這些文字進行任務分析。
+                </div>
+                <div id="transcriptionText" class="transcription-text">轉逐字稿結果將顯示在此處...</div>
                 <div class="controls">
-                    <button class="button" onclick="useTranscription()">✅ 使用此轉錄結果</button>
+                    <button class="button" onclick="useTranscription()">✅ 使用此逐字稿</button>
                     <button class="button" onclick="clearTranscription()">🗑️ 清除結果</button>
+                    <button class="button" onclick="downloadTranscription()">💾 下載逐字稿</button>
                 </div>
             </div>
             
@@ -514,12 +520,18 @@
         function pauseRecording() {
             if (mediaRecorder && isRecording && !isPaused) {
                 mediaRecorder.pause();
+                updateRecordingStatus('錄音已暫停', 'processing');
+                document.getElementById('pauseRecordBtn').classList.add('hidden');
+                document.getElementById('resumeRecordBtn').classList.remove('hidden');
             }
         }
         
         function resumeRecording() {
             if (mediaRecorder && isRecording && isPaused) {
                 mediaRecorder.resume();
+                updateRecordingStatus('正在錄音...', 'recording');
+                document.getElementById('resumeRecordBtn').classList.add('hidden');
+                document.getElementById('pauseRecordBtn').classList.remove('hidden');
             }
         }
         
@@ -534,6 +546,7 @@
                 }
                 
                 updateRecordingStatus('錄音完成', 'ready');
+                // 重置所有按鍵狀態
                 document.getElementById('startRecordBtn').classList.remove('hidden');
                 document.getElementById('pauseRecordBtn').classList.add('hidden');
                 document.getElementById('resumeRecordBtn').classList.add('hidden');
@@ -694,8 +707,25 @@
         }
         
         function clearTranscription() {
-            document.getElementById('transcriptionText').textContent = '轉錄結果將顯示在此處...';
+            document.getElementById('transcriptionText').textContent = '轉逐字稿結果將顯示在此處...';
             document.getElementById('transcriptionSection').classList.add('hidden');
+        }
+        
+        function downloadTranscription() {
+            const transcription = document.getElementById('transcriptionText').textContent;
+            if (transcription.trim() && transcription !== '轉逐字稿結果將顯示在此處...') {
+                const blob = new Blob([transcription], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `逐字稿_${new Date().toISOString().split('T')[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('沒有逐字稿內容可下載');
+            }
         }
         
         // 任務處理
