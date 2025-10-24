@@ -77,6 +77,8 @@ jobs:
         ls -la ./dist/
         echo "建構文件內容:"
         find ./dist/ -type f -name "*.js" -o -name "*.tsx" -o -name "*.html" | head -10
+        echo "所有建構文件:"
+        find ./dist/ -type f | sort
 
         # 上傳建構好的前端檔案，並設定正確的 MIME 類型
         gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
@@ -109,6 +111,18 @@ jobs:
         # 檢查特定文件
         echo "檢查 index.html:"
         gsutil cat gs://$BUCKET_NAME/index.html | head -20
+        
+        # 檢查 JavaScript 文件
+        echo "檢查 JavaScript 文件:"
+        gsutil ls gs://$BUCKET_NAME/assets/*.js || echo "沒有找到 .js 文件"
+        
+        # 檢查 CSS 文件
+        echo "檢查 CSS 文件:"
+        gsutil ls gs://$BUCKET_NAME/assets/*.css || echo "沒有找到 .css 文件"
+        
+        # 檢查文件權限
+        echo "檢查文件權限:"
+        gsutil ls -l gs://$BUCKET_NAME/
 
         # 輸出儲存桶名稱供後續使用
         echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
