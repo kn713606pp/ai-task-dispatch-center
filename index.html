@@ -248,6 +248,103 @@
             display: none;
         }
         
+        /* 輸入方式選擇樣式 */
+        .input-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .tab-button {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            color: #666;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .tab-button:hover {
+            border-color: #4facfe;
+            color: #4facfe;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-color: #4facfe;
+            color: white;
+        }
+        
+        .input-section {
+            display: none;
+        }
+        
+        .input-section.active {
+            display: block;
+        }
+        
+        /* 上傳區域樣式 */
+        .upload-area, .screenshot-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .upload-area:hover, .screenshot-area:hover {
+            border-color: #4facfe;
+            background: #f8f9ff;
+        }
+        
+        .upload-placeholder, .screenshot-placeholder {
+            text-align: center;
+        }
+        
+        .uploaded-files, .cloud-preview {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin: 5px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .cloud-url-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .cloud-url-input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .screenshot-preview {
+            text-align: center;
+        }
+        
         @media (max-width: 768px) {
             .voice-section {
                 grid-template-columns: 1fr;
@@ -260,6 +357,16 @@
             .main-content {
                 padding: 20px;
             }
+            
+            .input-tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .tab-button {
+                width: 100%;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
@@ -271,56 +378,164 @@
         </div>
         
         <div class="main-content">
-            <!-- 語音輸入區域 -->
-            <div class="voice-section">
-                <!-- 即時語音輸入 -->
-                <div class="voice-card">
-                    <h3>🎙️ 即時語音輸入</h3>
-                    <div id="voiceStatus" class="status ready">準備就緒 - 點擊開始語音輸入</div>
-                    <div class="controls">
-                        <button id="startVoiceBtn" class="button" onclick="startVoiceInput()">
-                            🎤 開始語音輸入
-                        </button>
-                        <button id="stopVoiceBtn" class="button hidden" onclick="stopVoiceInput()">
-                            ⏹️ 停止語音輸入
-                        </button>
-                        <button id="useVoiceTextBtn" class="button hidden" onclick="useVoiceText()">
-                            ✅ 使用此文字
-                        </button>
-                    </div>
-                    <textarea id="voiceInput" class="voice-input" placeholder="語音輸入結果將顯示在此處..."></textarea>
+            <!-- 多種輸入方式 -->
+            <div class="input-methods">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">📝 多種輸入方式</h2>
+                
+                <!-- 輸入方式選擇 -->
+                <div class="input-tabs">
+                    <button class="tab-button active" onclick="switchInputMethod('voice')">🎤 語音輸入</button>
+                    <button class="tab-button" onclick="switchInputMethod('manual')">⌨️ 手動輸入</button>
+                    <button class="tab-button" onclick="switchInputMethod('screenshot')">📸 螢幕截圖</button>
+                    <button class="tab-button" onclick="switchInputMethod('upload')">📁 上傳檔案</button>
+                    <button class="tab-button" onclick="switchInputMethod('cloud')">☁️ 雲端檔案</button>
+                    <button class="tab-button" onclick="switchInputMethod('text')">📄 文字貼文</button>
                 </div>
                 
-                <!-- 錄音功能 -->
-                <div class="voice-card">
-                    <h3>🎙️ 錄音功能</h3>
-                    <div id="recordingStatus" class="status ready">準備錄音</div>
-                    <div id="timer" class="timer hidden">00:00</div>
-                    
-                    <!-- 錄音控制按鍵 -->
-                    <div class="controls">
-                        <button id="startRecordBtn" class="button" onclick="startRecording()">
-                            ⏺️ 開始錄音
-                        </button>
-                        <button id="pauseRecordBtn" class="button hidden" onclick="pauseRecording()">
-                            ⏸️ 暫停錄音
-                        </button>
-                        <button id="resumeRecordBtn" class="button hidden" onclick="resumeRecording()">
-                            ▶️ 繼續錄音
-                        </button>
-                        <button id="stopRecordBtn" class="button hidden" onclick="stopRecording()">
-                            ⏹️ 停止錄音
-                        </button>
+                <!-- 語音輸入區域 -->
+                <div id="voice-input" class="input-section active">
+                    <div class="voice-section">
+                        <!-- 即時語音輸入 -->
+                        <div class="voice-card">
+                            <h3>🎙️ 即時語音輸入</h3>
+                            <div id="voiceStatus" class="status ready">準備就緒 - 點擊開始語音輸入</div>
+                            <div class="controls">
+                                <button id="startVoiceBtn" class="button" onclick="startVoiceInput()">
+                                    🎤 開始語音輸入
+                                </button>
+                                <button id="stopVoiceBtn" class="button hidden" onclick="stopVoiceInput()">
+                                    ⏹️ 停止語音輸入
+                                </button>
+                                <button id="useVoiceTextBtn" class="button hidden" onclick="useVoiceText()">
+                                    ✅ 使用此文字
+                                </button>
+                            </div>
+                            <textarea id="voiceInput" class="voice-input" placeholder="語音輸入結果將顯示在此處..."></textarea>
+                        </div>
+                        
+                        <!-- 錄音功能 -->
+                        <div class="voice-card">
+                            <h3>🎙️ 錄音功能</h3>
+                            <div id="recordingStatus" class="status ready">準備錄音</div>
+                            <div id="timer" class="timer hidden">00:00</div>
+                            
+                            <!-- 錄音控制按鍵 -->
+                            <div class="controls">
+                                <button id="startRecordBtn" class="button" onclick="startRecording()">
+                                    ⏺️ 開始錄音
+                                </button>
+                                <button id="pauseRecordBtn" class="button hidden" onclick="pauseRecording()">
+                                    ⏸️ 暫停錄音
+                                </button>
+                                <button id="resumeRecordBtn" class="button hidden" onclick="resumeRecording()">
+                                    ▶️ 繼續錄音
+                                </button>
+                                <button id="stopRecordBtn" class="button hidden" onclick="stopRecording()">
+                                    ⏹️ 停止錄音
+                                </button>
+                            </div>
+                            
+                            <!-- 錄音檔案列表 -->
+                            <div id="fileList" class="file-list hidden">
+                                <h4>📁 錄音檔案</h4>
+                                <div id="filesContainer"></div>
+                                <div class="controls">
+                                    <button class="button btn-small" onclick="selectAllFiles()">全選</button>
+                                    <button class="button btn-small" onclick="clearSelection()">清除選擇</button>
+                                    <button class="button btn-small" onclick="transcribeSelected()">轉逐字稿</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- 錄音檔案列表 -->
-                    <div id="fileList" class="file-list hidden">
-                        <h4>📁 錄音檔案</h4>
-                        <div id="filesContainer"></div>
+                </div>
+                
+                <!-- 手動輸入區域 -->
+                <div id="manual-input" class="input-section">
+                    <div class="voice-card">
+                        <h3>⌨️ 手動輸入</h3>
+                        <textarea id="manualInput" class="voice-input" placeholder="請在此輸入您的任務描述..."></textarea>
                         <div class="controls">
-                            <button class="button btn-small" onclick="selectAllFiles()">全選</button>
-                            <button class="button btn-small" onclick="clearSelection()">清除選擇</button>
-                            <button class="button btn-small" onclick="transcribeSelected()">轉逐字稿</button>
+                            <button class="button" onclick="processManualInput()">📝 分析任務</button>
+                            <button class="button" onclick="clearManualInput()">🗑️ 清除</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 螢幕截圖區域 -->
+                <div id="screenshot-input" class="input-section">
+                    <div class="voice-card">
+                        <h3>📸 螢幕截圖</h3>
+                        <div class="status info">點擊下方按鈕開始螢幕截圖，或拖拽圖片到此區域</div>
+                        <div id="screenshotArea" class="screenshot-area" ondrop="handleScreenshotDrop(event)" ondragover="handleDragOver(event)">
+                            <div id="screenshotPreview" class="screenshot-preview hidden">
+                                <img id="screenshotImage" style="max-width: 100%; max-height: 300px; border-radius: 5px;">
+                                <div class="controls">
+                                    <button class="button" onclick="analyzeScreenshot()">🔍 分析截圖</button>
+                                    <button class="button" onclick="clearScreenshot()">🗑️ 清除</button>
+                                </div>
+                            </div>
+                            <div id="screenshotPlaceholder" class="screenshot-placeholder">
+                                <p>📸 點擊按鈕開始截圖或拖拽圖片到此處</p>
+                                <button class="button" onclick="startScreenshot()">📸 開始截圖</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 檔案上傳區域 -->
+                <div id="upload-input" class="input-section">
+                    <div class="voice-card">
+                        <h3>📁 上傳檔案</h3>
+                        <div class="status info">支援 Word、PDF、JSON、Markdown 檔案</div>
+                        <div id="uploadArea" class="upload-area" ondrop="handleFileDrop(event)" ondragover="handleDragOver(event)">
+                            <input type="file" id="fileInput" accept=".doc,.docx,.pdf,.json,.md,.txt" multiple style="display: none;" onchange="handleFileSelect(event)">
+                            <div id="uploadPlaceholder" class="upload-placeholder">
+                                <p>📁 點擊選擇檔案或拖拽到此處</p>
+                                <button class="button" onclick="document.getElementById('fileInput').click()">📁 選擇檔案</button>
+                            </div>
+                            <div id="uploadedFiles" class="uploaded-files hidden">
+                                <h4>已上傳檔案</h4>
+                                <div id="filesList"></div>
+                                <div class="controls">
+                                    <button class="button" onclick="analyzeUploadedFiles()">📝 分析檔案</button>
+                                    <button class="button" onclick="clearUploadedFiles()">🗑️ 清除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 雲端檔案區域 -->
+                <div id="cloud-input" class="input-section">
+                    <div class="voice-card">
+                        <h3>☁️ 雲端檔案</h3>
+                        <div class="status info">連接 Google Docs 或其他雲端服務</div>
+                        <div class="cloud-input-area">
+                            <input type="url" id="cloudUrl" class="cloud-url-input" placeholder="請輸入 Google Docs 或其他雲端檔案連結...">
+                            <div class="controls">
+                                <button class="button" onclick="fetchCloudDocument()">☁️ 載入雲端檔案</button>
+                                <button class="button" onclick="clearCloudInput()">🗑️ 清除</button>
+                            </div>
+                            <div id="cloudPreview" class="cloud-preview hidden">
+                                <h4>雲端檔案預覽</h4>
+                                <div id="cloudContent"></div>
+                                <div class="controls">
+                                    <button class="button" onclick="analyzeCloudDocument()">📝 分析雲端檔案</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 文字貼文區域 -->
+                <div id="text-input" class="input-section">
+                    <div class="voice-card">
+                        <h3>📄 文字貼文</h3>
+                        <div class="status info">貼上任何文字內容進行分析</div>
+                        <textarea id="textInput" class="voice-input" placeholder="請貼上文字內容..."></textarea>
+                        <div class="controls">
+                            <button class="button" onclick="processTextInput()">📝 分析文字</button>
+                            <button class="button" onclick="clearTextInput()">🗑️ 清除</button>
                         </div>
                     </div>
                 </div>
@@ -776,8 +991,196 @@
             resultDiv.classList.remove('hidden');
         }
         
+        // 輸入方式切換
+        function switchInputMethod(method) {
+            // 隱藏所有輸入區域
+            document.querySelectorAll('.input-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 移除所有按鍵的 active 狀態
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // 顯示選中的輸入區域
+            document.getElementById(method + '-input').classList.add('active');
+            
+            // 設定按鍵為 active 狀態
+            event.target.classList.add('active');
+        }
+        
+        // 手動輸入功能
+        function processManualInput() {
+            const text = document.getElementById('manualInput').value.trim();
+            if (text) {
+                processTask(text);
+            } else {
+                alert('請輸入任務描述');
+            }
+        }
+        
+        function clearManualInput() {
+            document.getElementById('manualInput').value = '';
+        }
+        
+        // 螢幕截圖功能
+        function startScreenshot() {
+            // 這裡可以整合第三方截圖工具或瀏覽器 API
+            alert('螢幕截圖功能需要整合第三方工具或瀏覽器擴展。\n\n建議使用：\n1. 瀏覽器截圖擴展\n2. 系統截圖工具\n3. 拖拽圖片到此區域');
+        }
+        
+        function handleScreenshotDrop(event) {
+            event.preventDefault();
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                handleScreenshotFile(files[0]);
+            }
+        }
+        
+        function handleDragOver(event) {
+            event.preventDefault();
+        }
+        
+        function handleScreenshotFile(file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('screenshotImage').src = e.target.result;
+                    document.getElementById('screenshotPreview').classList.remove('hidden');
+                    document.getElementById('screenshotPlaceholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('請選擇圖片檔案');
+            }
+        }
+        
+        function analyzeScreenshot() {
+            const img = document.getElementById('screenshotImage');
+            if (img.src) {
+                // 這裡可以整合 OCR 或圖像分析 API
+                const mockAnalysis = '【截圖分析】\n這是一個模擬的截圖分析結果。實際應用中會使用 OCR 技術提取圖片中的文字內容。';
+                processTask(mockAnalysis);
+            } else {
+                alert('請先上傳截圖');
+            }
+        }
+        
+        function clearScreenshot() {
+            document.getElementById('screenshotPreview').classList.add('hidden');
+            document.getElementById('screenshotPlaceholder').classList.remove('hidden');
+            document.getElementById('screenshotImage').src = '';
+        }
+        
+        // 檔案上傳功能
+        function handleFileDrop(event) {
+            event.preventDefault();
+            const files = event.dataTransfer.files;
+            handleFiles(files);
+        }
+        
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+        
+        function handleFiles(files) {
+            const uploadedFiles = document.getElementById('uploadedFiles');
+            const filesList = document.getElementById('filesList');
+            
+            uploadedFiles.classList.remove('hidden');
+            filesList.innerHTML = '';
+            
+            Array.from(files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-details">
+                            大小: ${(file.size / 1024 / 1024).toFixed(2)} MB | 
+                            類型: ${file.type || '未知'}
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="button btn-small" onclick="removeFile(${index})">🗑️</button>
+                    </div>
+                `;
+                filesList.appendChild(fileItem);
+            });
+        }
+        
+        function removeFile(index) {
+            // 移除檔案邏輯
+            const filesList = document.getElementById('filesList');
+            const fileItems = filesList.querySelectorAll('.file-item');
+            if (fileItems[index]) {
+                fileItems[index].remove();
+            }
+        }
+        
+        function analyzeUploadedFiles() {
+            const filesList = document.getElementById('filesList');
+            const fileItems = filesList.querySelectorAll('.file-item');
+            if (fileItems.length > 0) {
+                // 這裡可以整合檔案解析 API
+                const mockAnalysis = '【檔案分析】\n這是模擬的檔案分析結果。實際應用中會解析 Word、PDF、JSON、Markdown 等檔案內容。';
+                processTask(mockAnalysis);
+            } else {
+                alert('請先上傳檔案');
+            }
+        }
+        
+        function clearUploadedFiles() {
+            document.getElementById('uploadedFiles').classList.add('hidden');
+            document.getElementById('filesList').innerHTML = '';
+        }
+        
+        // 雲端檔案功能
+        function fetchCloudDocument() {
+            const url = document.getElementById('cloudUrl').value.trim();
+            if (url) {
+                // 這裡可以整合 Google Docs API 或其他雲端服務
+                const mockContent = '【雲端檔案內容】\n這是模擬的雲端檔案內容。實際應用中會通過 API 獲取 Google Docs 或其他雲端服務的檔案內容。';
+                
+                document.getElementById('cloudContent').textContent = mockContent;
+                document.getElementById('cloudPreview').classList.remove('hidden');
+            } else {
+                alert('請輸入雲端檔案連結');
+            }
+        }
+        
+        function analyzeCloudDocument() {
+            const content = document.getElementById('cloudContent').textContent;
+            if (content) {
+                processTask(content);
+            } else {
+                alert('請先載入雲端檔案');
+            }
+        }
+        
+        function clearCloudInput() {
+            document.getElementById('cloudUrl').value = '';
+            document.getElementById('cloudPreview').classList.add('hidden');
+        }
+        
+        // 文字貼文功能
+        function processTextInput() {
+            const text = document.getElementById('textInput').value.trim();
+            if (text) {
+                processTask(text);
+            } else {
+                alert('請貼上文字內容');
+            }
+        }
+        
+        function clearTextInput() {
+            document.getElementById('textInput').value = '';
+        }
+        
         // 初始化
-        console.log('AI 任務派遣中心 - 語音輸入版載入成功');
+        console.log('AI 任務派遣中心 - 多種輸入方式版載入成功');
     </script>
 </body>
 </html>
