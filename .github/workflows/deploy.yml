@@ -26,13 +26,13 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-            - name: Build frontend
-              run: |
-                # 使用簡化的 HTML 版本進行測試
-                echo "使用簡化的 HTML 版本"
-                ls -la
-                echo "檢查 index.html:"
-                head -20 index.html
+    - name: Build frontend
+      run: |
+        # 使用簡化的 HTML 版本進行測試
+        echo "使用簡化的 HTML 版本"
+        ls -la
+        echo "檢查 index.html:"
+        head -20 index.html
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
