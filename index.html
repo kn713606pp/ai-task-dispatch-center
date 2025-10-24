@@ -4,9 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 任務派遣中心</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .input-section {
+            margin: 20px 0;
+        }
+        .input-section textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI 任務派遣中心</h1>
+            <p>智能任務分析與派遣系統</p>
+        </div>
+        
+        <div id="status" class="status info">
+            ✅ 系統已載入 - 這是一個純 HTML 版本，用於測試部署
+        </div>
+        
+        <div class="input-section">
+            <h3>📝 任務輸入</h3>
+            <textarea id="taskInput" placeholder="請輸入您的任務描述..."></textarea>
+            <button class="button" onclick="processTask()">分析任務</button>
+        </div>
+        
+        <div id="result" style="display: none;">
+            <h3>📋 分析結果</h3>
+            <div id="resultContent"></div>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+            <h4>🔧 系統狀態</h4>
+            <p>✅ 前端載入正常</p>
+            <p>⏳ 後端 API 連接測試中...</p>
+            <p>📱 音訊功能：需要 JavaScript 環境</p>
+        </div>
+    </div>
+
+    <script>
+        console.log('AI 任務派遣中心 - 純 HTML 版本載入成功');
+        
+        function processTask() {
+            const input = document.getElementById('taskInput').value;
+            if (!input.trim()) {
+                alert('請輸入任務描述');
+                return;
+            }
+            
+            // 模擬 AI 分析
+            const result = {
+                tasks: [{
+                    title: '【模擬任務】' + input.substring(0, 30) + '...',
+                    description: input,
+                    priority: '中',
+                    status: '待辦事項',
+                    category: '測試',
+                    assignee: '艾蜜莉',
+                    dueDate: new Date().toISOString().split('T')[0]
+                }],
+                summary: '這是一個模擬的 AI 分析結果，用於測試系統功能。'
+            };
+            
+            displayResult(result);
+        }
+        
+        function displayResult(result) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('resultContent');
+            
+            let html = '<div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin: 10px 0;">';
+            html += '<h4>📋 任務列表</h4>';
+            result.tasks.forEach((task, index) => {
+                html += `<div style="background: white; padding: 10px; margin: 5px 0; border-left: 4px solid #007bff;">`;
+                html += `<strong>${task.title}</strong><br>`;
+                html += `<small>優先級: ${task.priority} | 負責人: ${task.assignee} | 狀態: ${task.status}</small>`;
+                html += `</div>`;
+            });
+            html += '</div>';
+            
+            html += '<div style="background: #d4edda; padding: 15px; border-radius: 5px; margin: 10px 0;">';
+            html += '<h4>📝 摘要</h4>';
+            html += `<p>${result.summary}</p>`;
+            html += '</div>';
+            
+            contentDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+        }
+        
+        // 測試後端連接
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => {
+                console.log('後端連接成功:', data);
+                document.getElementById('status').innerHTML = '✅ 系統已載入 - 後端連接正常';
+                document.getElementById('status').className = 'status success';
+            })
+            .catch(error => {
+                console.log('後端連接失敗:', error);
+                document.getElementById('status').innerHTML = '⚠️ 系統已載入 - 後端連接失敗，使用模擬模式';
+                document.getElementById('status').className = 'status error';
+            });
+    </script>
 </body>
 </html>

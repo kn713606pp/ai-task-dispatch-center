@@ -26,15 +26,13 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Build frontend
-      run: |
-        # 建構前端
-        npm run build
-        
-        # 檢查建構結果
-        ls -la dist/
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+            - name: Build frontend
+              run: |
+                # 使用簡化的 HTML 版本進行測試
+                echo "使用簡化的 HTML 版本"
+                ls -la
+                echo "檢查 index.html:"
+                head -20 index.html
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
@@ -72,34 +70,13 @@ jobs:
         # 設定網站配置
         gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME/
 
-        # 檢查建構結果
-        echo "檢查建構結果:"
-        ls -la ./dist/
-        echo "建構文件內容:"
-        find ./dist/ -type f -name "*.js" -o -name "*.tsx" -o -name "*.html" | head -10
-        echo "所有建構文件:"
-        find ./dist/ -type f | sort
-
-        # 上傳建構好的前端檔案，並設定正確的 MIME 類型
-        gsutil -m cp -r ./dist/* gs://$BUCKET_NAME/
+        # 直接上傳簡化的 HTML 文件
+        echo "上傳簡化的 HTML 文件:"
+        gsutil cp index.html gs://$BUCKET_NAME/
         
-        # 設定文件 MIME 類型（只設定實際存在的文件）
-        echo "設定 JavaScript 文件 MIME 類型..."
-        gsutil -m setmeta -h "Content-Type:application/javascript" gs://$BUCKET_NAME/**/*.js || echo "沒有 .js 文件"
-        
-        echo "設定 CSS 文件 MIME 類型..."
-        gsutil -m setmeta -h "Content-Type:text/css" gs://$BUCKET_NAME/**/*.css || echo "沒有 .css 文件"
-        
-        echo "設定 JSON 文件 MIME 類型..."
-        gsutil -m setmeta -h "Content-Type:application/json" gs://$BUCKET_NAME/**/*.json || echo "沒有 .json 文件"
-        
-        echo "設定圖片文件 MIME 類型..."
-        gsutil -m setmeta -h "Content-Type:image/svg+xml" gs://$BUCKET_NAME/**/*.svg || echo "沒有 .svg 文件"
-        gsutil -m setmeta -h "Content-Type:image/png" gs://$BUCKET_NAME/**/*.png || echo "沒有 .png 文件"
-        gsutil -m setmeta -h "Content-Type:image/jpeg" gs://$BUCKET_NAME/**/*.jpg || echo "沒有 .jpg 文件"
-        gsutil -m setmeta -h "Content-Type:image/jpeg" gs://$BUCKET_NAME/**/*.jpeg || echo "沒有 .jpeg 文件"
-        gsutil -m setmeta -h "Content-Type:image/gif" gs://$BUCKET_NAME/**/*.gif || echo "沒有 .gif 文件"
-        gsutil -m setmeta -h "Content-Type:image/webp" gs://$BUCKET_NAME/**/*.webp || echo "沒有 .webp 文件"
+        # 設定 HTML 文件的 MIME 類型
+        echo "設定 HTML 文件 MIME 類型..."
+        gsutil setmeta -h "Content-Type:text/html" gs://$BUCKET_NAME/index.html
 
         # 設定公開存取權限
         gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME/
@@ -108,17 +85,9 @@ jobs:
         echo "上傳後的文件列表:"
         gsutil ls gs://$BUCKET_NAME/
         
-        # 檢查特定文件
-        echo "檢查 index.html:"
-        gsutil cat gs://$BUCKET_NAME/index.html | head -20
-        
-        # 檢查 JavaScript 文件
-        echo "檢查 JavaScript 文件:"
-        gsutil ls gs://$BUCKET_NAME/assets/*.js || echo "沒有找到 .js 文件"
-        
-        # 檢查 CSS 文件
-        echo "檢查 CSS 文件:"
-        gsutil ls gs://$BUCKET_NAME/assets/*.css || echo "沒有找到 .css 文件"
+        # 檢查 HTML 文件
+        echo "檢查 index.html 內容:"
+        gsutil cat gs://$BUCKET_NAME/index.html | head -30
         
         # 檢查文件權限
         echo "檢查文件權限:"
