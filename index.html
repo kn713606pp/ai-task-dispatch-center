@@ -3,112 +3,704 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 任務派遣中心</title>
+    <title>AI 任務派遣中心 - 語音輸入版</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        * {
             margin: 0;
-            padding: 20px;
-            min-height: 100vh;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
         }
+        
         .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
             text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .voice-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
             margin-bottom: 30px;
         }
-        .header h1 {
+        
+        .voice-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-card:hover {
+            border-color: #4facfe;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.2);
+        }
+        
+        .voice-card h3 {
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .status {
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
+        
+        .voice-input {
+            background: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
         }
-        .success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+        
+        .voice-input:focus {
+            outline: none;
+            border-color: #4facfe;
         }
-        .error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        .info {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
+        
         .button {
-            background: #007bff;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
             margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
+        
         .button:hover {
-            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
         }
-        .input-section {
-            margin: 20px 0;
+        
+        .button:active {
+            transform: translateY(0);
         }
-        .input-section textarea {
-            width: 100%;
-            height: 100px;
+        
+        .button.recording {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .button.processing {
+            background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
+        }
+        
+        .timer {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-align: center;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .status.recording {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .status.processing {
+            background: #fff3e0;
+            color: #ef6c00;
+            border: 1px solid #ffcc02;
+        }
+        
+        .status.ready {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .file-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 10px;
-            border: 1px solid #ddd;
+            background: white;
             border-radius: 5px;
-            font-family: Arial, sans-serif;
+            margin: 5px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .file-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 15px;
+        }
+        
+        .transcription-result {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 200px;
+        }
+        
+        .transcription-text {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 150px;
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .voice-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 AI 任務派遣中心</h1>
-            <p>智能任務分析與派遣系統</p>
+            <h1>🎤 AI 任務派遣中心</h1>
+            <p>智能語音輸入與任務分析系統</p>
         </div>
         
-        <div id="status" class="status info">
-            ✅ 系統已載入 - 這是一個純 HTML 版本，用於測試部署
-        </div>
-        
-        <div class="input-section">
-            <h3>📝 任務輸入</h3>
-            <textarea id="taskInput" placeholder="請輸入您的任務描述..."></textarea>
-            <button class="button" onclick="processTask()">分析任務</button>
-        </div>
-        
-        <div id="result" style="display: none;">
-            <h3>📋 分析結果</h3>
-            <div id="resultContent"></div>
-        </div>
-        
-        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
-            <h4>🔧 系統狀態</h4>
-            <p>✅ 前端載入正常</p>
-            <p>⏳ 後端 API 連接測試中...</p>
-            <p>📱 音訊功能：需要 JavaScript 環境</p>
+        <div class="main-content">
+            <!-- 語音輸入區域 -->
+            <div class="voice-section">
+                <!-- 即時語音輸入 -->
+                <div class="voice-card">
+                    <h3>🎙️ 即時語音輸入</h3>
+                    <div id="voiceStatus" class="status ready">準備就緒 - 點擊開始語音輸入</div>
+                    <div class="controls">
+                        <button id="startVoiceBtn" class="button" onclick="startVoiceInput()">
+                            🎤 開始語音輸入
+                        </button>
+                        <button id="stopVoiceBtn" class="button hidden" onclick="stopVoiceInput()">
+                            ⏹️ 停止語音輸入
+                        </button>
+                        <button id="useVoiceTextBtn" class="button hidden" onclick="useVoiceText()">
+                            ✅ 使用此文字
+                        </button>
+                    </div>
+                    <textarea id="voiceInput" class="voice-input" placeholder="語音輸入結果將顯示在此處..."></textarea>
+                </div>
+                
+                <!-- 錄音功能 -->
+                <div class="voice-card">
+                    <h3>🎙️ 錄音功能</h3>
+                    <div id="recordingStatus" class="status ready">準備錄音</div>
+                    <div id="timer" class="timer hidden">00:00</div>
+                    <div class="controls">
+                        <button id="startRecordBtn" class="button" onclick="startRecording()">
+                            ⏺️ 開始錄音
+                        </button>
+                        <button id="pauseRecordBtn" class="button hidden" onclick="pauseRecording()">
+                            ⏸️ 暫停
+                        </button>
+                        <button id="resumeRecordBtn" class="button hidden" onclick="resumeRecording()">
+                            ▶️ 繼續
+                        </button>
+                        <button id="stopRecordBtn" class="button hidden" onclick="stopRecording()">
+                            ⏹️ 停止錄音
+                        </button>
+                    </div>
+                    
+                    <!-- 錄音檔案列表 -->
+                    <div id="fileList" class="file-list hidden">
+                        <h4>📁 錄音檔案</h4>
+                        <div id="filesContainer"></div>
+                        <div class="controls">
+                            <button class="button btn-small" onclick="selectAllFiles()">全選</button>
+                            <button class="button btn-small" onclick="clearSelection()">清除選擇</button>
+                            <button class="button btn-small" onclick="transcribeSelected()">轉錄選中</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 轉錄結果 -->
+            <div id="transcriptionSection" class="transcription-result hidden">
+                <h3>📝 轉錄結果</h3>
+                <div id="transcriptionText" class="transcription-text">轉錄結果將顯示在此處...</div>
+                <div class="controls">
+                    <button class="button" onclick="useTranscription()">✅ 使用此轉錄結果</button>
+                    <button class="button" onclick="clearTranscription()">🗑️ 清除結果</button>
+                </div>
+            </div>
+            
+            <!-- 任務分析結果 -->
+            <div id="taskResult" class="hidden">
+                <h3>📋 任務分析結果</h3>
+                <div id="taskContent"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        console.log('AI 任務派遣中心 - 純 HTML 版本載入成功');
+        // 語音輸入相關變數
+        let recognition = null;
+        let isVoiceInputActive = false;
+        let voiceText = '';
         
-        function processTask() {
-            const input = document.getElementById('taskInput').value;
-            if (!input.trim()) {
+        // 錄音相關變數
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let isPaused = false;
+        let recordingTime = 0;
+        let timerInterval = null;
+        let accumulatedTime = 0;
+        let audioFiles = [];
+        let selectedFiles = new Set();
+        
+        // 語音輸入功能
+        function startVoiceInput() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('您的瀏覽器不支援語音識別功能');
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'zh-TW';
+            
+            recognition.onstart = () => {
+                isVoiceInputActive = true;
+                voiceText = '';
+                updateVoiceStatus('正在聆聽...', 'recording');
+                document.getElementById('startVoiceBtn').classList.add('hidden');
+                document.getElementById('stopVoiceBtn').classList.remove('hidden');
+            };
+            
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                voiceText += finalTranscript;
+                document.getElementById('voiceInput').value = voiceText + interimTranscript;
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('語音識別錯誤:', event.error);
+                updateVoiceStatus('語音識別錯誤: ' + event.error, 'error');
+                stopVoiceInput();
+            };
+            
+            recognition.onend = () => {
+                isVoiceInputActive = false;
+                updateVoiceStatus('語音輸入完成', 'ready');
+                document.getElementById('startVoiceBtn').classList.remove('hidden');
+                document.getElementById('stopVoiceBtn').classList.add('hidden');
+                if (voiceText.trim()) {
+                    document.getElementById('useVoiceTextBtn').classList.remove('hidden');
+                }
+            };
+            
+            recognition.start();
+        }
+        
+        function stopVoiceInput() {
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+        
+        function useVoiceText() {
+            const text = document.getElementById('voiceInput').value.trim();
+            if (text) {
+                processTask(text);
+                document.getElementById('useVoiceTextBtn').classList.add('hidden');
+                document.getElementById('voiceInput').value = '';
+                voiceText = '';
+            }
+        }
+        
+        function updateVoiceStatus(message, type) {
+            const status = document.getElementById('voiceStatus');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        // 錄音功能
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    } 
+                });
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const duration = accumulatedTime;
+                    const timestamp = new Date();
+                    
+                    const newFile = {
+                        id: `recording_${timestamp.getTime()}`,
+                        name: `錄音檔案_${audioFiles.length + 1}_${formatTime(duration)}`,
+                        blob: audioBlob,
+                        duration: duration,
+                        timestamp: timestamp
+                    };
+                    
+                    audioFiles.push(newFile);
+                    updateFileList();
+                    stream.getTracks().forEach(track => track.stop());
+                    accumulatedTime = 0;
+                };
+                
+                mediaRecorder.onpause = () => {
+                    isPaused = true;
+                    if (timerInterval) clearInterval(timerInterval);
+                };
+                
+                mediaRecorder.onresume = () => {
+                    isPaused = false;
+                    startTimer();
+                };
+                
+                mediaRecorder.start(1000);
+                isRecording = true;
+                isPaused = false;
+                recordingTime = 0;
+                accumulatedTime = 0;
+                
+                updateRecordingStatus('正在錄音...', 'recording');
+                document.getElementById('startRecordBtn').classList.add('hidden');
+                document.getElementById('pauseRecordBtn').classList.remove('hidden');
+                document.getElementById('stopRecordBtn').classList.remove('hidden');
+                document.getElementById('timer').classList.remove('hidden');
+                
+                startTimer();
+                
+            } catch (error) {
+                console.error('無法訪問麥克風:', error);
+                alert('無法訪問麥克風，請檢查瀏覽器權限設定。');
+            }
+        }
+        
+        function pauseRecording() {
+            if (mediaRecorder && isRecording && !isPaused) {
+                mediaRecorder.pause();
+            }
+        }
+        
+        function resumeRecording() {
+            if (mediaRecorder && isRecording && isPaused) {
+                mediaRecorder.resume();
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                isPaused = false;
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                
+                updateRecordingStatus('錄音完成', 'ready');
+                document.getElementById('startRecordBtn').classList.remove('hidden');
+                document.getElementById('pauseRecordBtn').classList.add('hidden');
+                document.getElementById('resumeRecordBtn').classList.add('hidden');
+                document.getElementById('stopRecordBtn').classList.add('hidden');
+                document.getElementById('timer').classList.add('hidden');
+            }
+        }
+        
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                recordingTime++;
+                accumulatedTime = recordingTime;
+                document.getElementById('timer').textContent = formatTime(recordingTime);
+                
+                // 每10分鐘自動換檔
+                if (recordingTime > 0 && recordingTime % 600 === 0) {
+                    console.log('自動換檔：停止當前錄音並開始新錄音');
+                    stopRecording();
+                    setTimeout(() => {
+                        startRecording();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateRecordingStatus(message, type) {
+            const status = document.getElementById('recordingStatus');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function updateFileList() {
+            const container = document.getElementById('filesContainer');
+            const fileList = document.getElementById('fileList');
+            
+            if (audioFiles.length > 0) {
+                fileList.classList.remove('hidden');
+                container.innerHTML = '';
+                
+                audioFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-details">
+                                時長: ${formatTime(file.duration)} | 
+                                大小: ${(file.blob.size / 1024 / 1024).toFixed(2)} MB | 
+                                時間: ${file.timestamp.toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <input type="checkbox" ${selectedFiles.has(file.id) ? 'checked' : ''} 
+                                   onchange="toggleFileSelection('${file.id}')">
+                            <button class="button btn-small" onclick="downloadFile('${file.id}')">💾</button>
+                            <button class="button btn-small" onclick="deleteFile('${file.id}')">🗑️</button>
+                        </div>
+                    `;
+                    container.appendChild(fileItem);
+                });
+            } else {
+                fileList.classList.add('hidden');
+            }
+        }
+        
+        function toggleFileSelection(fileId) {
+            if (selectedFiles.has(fileId)) {
+                selectedFiles.delete(fileId);
+            } else {
+                selectedFiles.add(fileId);
+            }
+        }
+        
+        function selectAllFiles() {
+            selectedFiles.clear();
+            audioFiles.forEach(file => selectedFiles.add(file.id));
+            updateFileList();
+        }
+        
+        function clearSelection() {
+            selectedFiles.clear();
+            updateFileList();
+        }
+        
+        function downloadFile(fileId) {
+            const file = audioFiles.find(f => f.id === fileId);
+            if (file) {
+                const url = URL.createObjectURL(file.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${file.name}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        function deleteFile(fileId) {
+            if (confirm('確定要刪除此檔案嗎？')) {
+                audioFiles = audioFiles.filter(f => f.id !== fileId);
+                selectedFiles.delete(fileId);
+                updateFileList();
+            }
+        }
+        
+        async function transcribeSelected() {
+            if (selectedFiles.size === 0) {
+                alert('請先選擇要轉錄的檔案');
+                return;
+            }
+            
+            const selectedAudioFiles = audioFiles.filter(file => selectedFiles.has(file.id));
+            let allTranscriptions = [];
+            
+            document.getElementById('transcriptionSection').classList.remove('hidden');
+            document.getElementById('transcriptionText').textContent = '正在轉錄中，請稍候...';
+            
+            try {
+                for (const file of selectedAudioFiles) {
+                    const formData = new FormData();
+                    formData.append('audio', file.blob, `${file.name}.webm`);
+                    formData.append('mimeType', 'audio/webm');
+                    formData.append('languageCode', 'zh-TW');
+                    
+                    // 這裡應該調用後端 API，暫時使用模擬
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬轉錄時間
+                    
+                    const mockTranscription = `【${file.name}】\n這是模擬的轉錄結果。實際應用中會調用 Google Cloud Speech-to-Text API 進行轉錄。\n\n`;
+                    allTranscriptions.push(mockTranscription);
+                }
+                
+                const combinedTranscription = allTranscriptions.join('---\n\n');
+                document.getElementById('transcriptionText').textContent = combinedTranscription;
+                
+                // 清除已轉錄的檔案
+                audioFiles = audioFiles.filter(file => !selectedFiles.has(file.id));
+                selectedFiles.clear();
+                updateFileList();
+                
+            } catch (error) {
+                console.error('轉錄錯誤:', error);
+                alert('轉錄失敗: ' + error.message);
+            }
+        }
+        
+        function useTranscription() {
+            const transcription = document.getElementById('transcriptionText').textContent;
+            if (transcription.trim()) {
+                processTask(transcription);
+            }
+        }
+        
+        function clearTranscription() {
+            document.getElementById('transcriptionText').textContent = '轉錄結果將顯示在此處...';
+            document.getElementById('transcriptionSection').classList.add('hidden');
+        }
+        
+        // 任務處理
+        function processTask(text) {
+            if (!text.trim()) {
                 alert('請輸入任務描述');
                 return;
             }
@@ -116,56 +708,46 @@
             // 模擬 AI 分析
             const result = {
                 tasks: [{
-                    title: '【模擬任務】' + input.substring(0, 30) + '...',
-                    description: input,
+                    title: '【語音任務】' + text.substring(0, 30) + '...',
+                    description: text,
                     priority: '中',
                     status: '待辦事項',
-                    category: '測試',
+                    category: '語音輸入',
                     assignee: '艾蜜莉',
                     dueDate: new Date().toISOString().split('T')[0]
                 }],
-                summary: '這是一個模擬的 AI 分析結果，用於測試系統功能。'
+                summary: '這是基於語音輸入的任務分析結果。'
             };
             
-            displayResult(result);
+            displayTaskResult(result);
         }
         
-        function displayResult(result) {
-            const resultDiv = document.getElementById('result');
-            const contentDiv = document.getElementById('resultContent');
+        function displayTaskResult(result) {
+            const resultDiv = document.getElementById('taskResult');
+            const contentDiv = document.getElementById('taskContent');
             
-            let html = '<div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin: 10px 0;">';
+            let html = '<div style="background: #e9ecef; padding: 20px; border-radius: 8px; margin: 15px 0;">';
             html += '<h4>📋 任務列表</h4>';
             result.tasks.forEach((task, index) => {
-                html += `<div style="background: white; padding: 10px; margin: 5px 0; border-left: 4px solid #007bff;">`;
+                html += `<div style="background: white; padding: 15px; margin: 10px 0; border-left: 4px solid #4facfe; border-radius: 5px;">`;
                 html += `<strong>${task.title}</strong><br>`;
-                html += `<small>優先級: ${task.priority} | 負責人: ${task.assignee} | 狀態: ${task.status}</small>`;
+                html += `<small style="color: #666;">優先級: ${task.priority} | 負責人: ${task.assignee} | 狀態: ${task.status}</small>`;
+                html += `<p style="margin-top: 10px;">${task.description}</p>`;
                 html += `</div>`;
             });
             html += '</div>';
             
-            html += '<div style="background: #d4edda; padding: 15px; border-radius: 5px; margin: 10px 0;">';
+            html += '<div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px 0;">';
             html += '<h4>📝 摘要</h4>';
             html += `<p>${result.summary}</p>`;
             html += '</div>';
             
             contentDiv.innerHTML = html;
-            resultDiv.style.display = 'block';
+            resultDiv.classList.remove('hidden');
         }
         
-        // 測試後端連接
-        fetch('/api/health')
-            .then(response => response.json())
-            .then(data => {
-                console.log('後端連接成功:', data);
-                document.getElementById('status').innerHTML = '✅ 系統已載入 - 後端連接正常';
-                document.getElementById('status').className = 'status success';
-            })
-            .catch(error => {
-                console.log('後端連接失敗:', error);
-                document.getElementById('status').innerHTML = '⚠️ 系統已載入 - 後端連接失敗，使用模擬模式';
-                document.getElementById('status').className = 'status error';
-            });
+        // 初始化
+        console.log('AI 任務派遣中心 - 語音輸入版載入成功');
     </script>
 </body>
 </html>
