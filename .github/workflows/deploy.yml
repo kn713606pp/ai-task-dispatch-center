@@ -50,12 +50,11 @@ jobs:
           --platform managed \
           --region asia-east1 \
           --allow-unauthenticated \
-          --memory 4Gi \
-          --cpu 2 \
-          --timeout 3600 \
-          --max-instances 10 \
-          --service-account=ai-dispatch-service@${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars "NODE_ENV=production,FIRESTORE_COLLECTION=tasks,GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }},GMAIL_USER=${{ secrets.GMAIL_USER }},GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}" \
+          --memory 2Gi \
+          --cpu 1 \
+          --timeout 300 \
+          --max-instances 5 \
+          --set-env-vars "NODE_ENV=production" \
           --no-traffic
         
         echo "等待服務啟動..."

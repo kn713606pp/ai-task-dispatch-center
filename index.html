@@ -1661,7 +1661,18 @@
             try {
                 console.log('開始檢查後端狀態...');
                 
-                // 先檢查簡單測試端點
+                // 先檢查根路徑
+                const rootResponse = await fetch('/');
+                console.log('根路徑響應:', rootResponse.status);
+                
+                if (rootResponse.ok) {
+                    const rootData = await rootResponse.json();
+                    console.log('根路徑正常:', rootData);
+                } else {
+                    console.error('根路徑失敗:', rootResponse.status);
+                }
+                
+                // 檢查簡單測試端點
                 const testResponse = await fetch('/test');
                 console.log('測試端點響應:', testResponse.status);
                 

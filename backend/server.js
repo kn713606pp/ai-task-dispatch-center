@@ -17,14 +17,29 @@ const corsOptions = {
         'https://storage.googleapis.com', // Google Cloud Storage 域名
         'https://storage.googleapis.com/*', // 所有 Cloud Storage 子域名
         'http://localhost:3000', // 開發環境
+        'https://*.googleapis.com', // Google APIs 域名
+        'https://*.googleusercontent.com', // Google 用戶內容域名
         '*' // 暫時允許所有來源，用於調試
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    optionsSuccessStatus: 200 // 支援舊版瀏覽器
 };
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
+
+// 添加請求日誌中間件
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'unknown'}`);
+    next();
+});
+
+// 添加錯誤處理中間件
+app.use((err, req, res, next) => {
+    console.error('服務器錯誤:', err);
+    res.status(500).json({ error: '內部服務器錯誤', message: err.message });
+});
 
 // 初始化服務
 const firestore = new Firestore();
@@ -73,7 +88,20 @@ app.get('/test', (req, res) => {
     console.log('收到測試請求');
     res.status(200).json({ 
         message: '測試端點正常',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'unknown',
+        port: process.env.PORT || 'unknown'
+    });
+});
+
+// 根路徑測試
+app.get('/', (req, res) => {
+    console.log('收到根路徑請求');
+    res.status(200).json({ 
+        message: 'AI 任務派遣中心後端服務',
+        status: 'running',
+        timestamp: new Date().toISOString(),
+        endpoints: ['/test', '/health', '/api/debug', '/api/analyze']
     });
 });
 
