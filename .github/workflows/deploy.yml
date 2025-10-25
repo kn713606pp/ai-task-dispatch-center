@@ -44,6 +44,7 @@ jobs:
 
     - name: Deploy to Cloud Run (Direct)
       run: |
+        echo "開始部署後端服務..."
         gcloud run deploy ai-dispatch-backend \
           --source ./backend \
           --platform managed \
@@ -54,7 +55,30 @@ jobs:
           --timeout 3600 \
           --max-instances 10 \
           --service-account=ai-dispatch-service@${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars "NODE_ENV=production,FIRESTORE_COLLECTION=tasks,GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }},GMAIL_USER=${{ secrets.GMAIL_USER }},GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}"
+          --set-env-vars "NODE_ENV=production,FIRESTORE_COLLECTION=tasks,GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }},GMAIL_USER=${{ secrets.GMAIL_USER }},GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}" \
+          --no-traffic
+        
+        echo "等待服務啟動..."
+        sleep 30
+        
+        echo "切換流量到新版本..."
+        gcloud run services update-traffic ai-dispatch-backend \
+          --platform managed \
+          --region asia-east1 \
+          --to-latest
+        
+        echo "驗證後端部署..."
+        BACKEND_URL=$(gcloud run services describe ai-dispatch-backend --platform managed --region asia-east1 --format 'value(status.url)')
+        echo "後端 URL: $BACKEND_URL"
+        
+        echo "測試健康檢查端點..."
+        curl -f "$BACKEND_URL/health" || echo "健康檢查失敗"
+        
+        echo "測試簡單端點..."
+        curl -f "$BACKEND_URL/test" || echo "測試端點失敗"
+        
+        echo "測試 AI 分析端點..."
+        curl -f "$BACKEND_URL/api/debug" || echo "AI 分析端點失敗"
 
     - name: Deploy frontend to Cloud Storage
       run: |

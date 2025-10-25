@@ -58,11 +58,22 @@ app.get('/', (req, res) => {
 
 // 健康檢查端點
 app.get('/health', (req, res) => {
+    console.log('收到健康檢查請求');
     res.status(200).json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'production',
-        region: process.env.GOOGLE_CLOUD_REGION || 'unknown'
+        region: process.env.GOOGLE_CLOUD_REGION || 'unknown',
+        message: '後端服務正常運行'
+    });
+});
+
+// 簡單測試端點
+app.get('/test', (req, res) => {
+    console.log('收到測試請求');
+    res.status(200).json({ 
+        message: '測試端點正常',
+        timestamp: new Date().toISOString()
     });
 });
 

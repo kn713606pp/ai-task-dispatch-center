@@ -1659,15 +1659,35 @@
         // 檢查後端狀態
         async function checkBackendStatus() {
             try {
-                // 先檢查基本健康狀態
+                console.log('開始檢查後端狀態...');
+                
+                // 先檢查簡單測試端點
+                const testResponse = await fetch('/test');
+                console.log('測試端點響應:', testResponse.status);
+                
+                if (testResponse.ok) {
+                    const testData = await testResponse.json();
+                    console.log('測試端點正常:', testData);
+                } else {
+                    console.error('測試端點失敗:', testResponse.status);
+                }
+                
+                // 檢查基本健康狀態
                 const healthResponse = await fetch('/health');
+                console.log('健康檢查響應:', healthResponse.status);
+                
                 if (!healthResponse.ok) {
                     console.error('基本健康檢查失敗:', healthResponse.status);
                     return false;
                 }
                 
+                const healthData = await healthResponse.json();
+                console.log('健康檢查正常:', healthData);
+                
                 // 檢查 AI 分析端點
                 const debugResponse = await fetch('/api/debug');
+                console.log('調試端點響應:', debugResponse.status);
+                
                 if (debugResponse.ok) {
                     const data = await debugResponse.json();
                     console.log('AI 分析端點正常:', data);
