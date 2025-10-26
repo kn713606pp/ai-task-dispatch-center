@@ -688,6 +688,36 @@
     </div>
 
     <script>
+        // 後端 URL 配置
+        let BACKEND_URL = 'https://ai-dispatch-backend-xxxxx-uc.a.run.app'; // 將在部署時動態替換
+        
+        // 嘗試從環境變數或本地存儲獲取後端 URL
+        function getBackendUrl() {
+            // 檢查是否有存儲的後端 URL
+            const storedUrl = localStorage.getItem('backendUrl');
+            if (storedUrl && storedUrl !== 'https://ai-dispatch-backend-xxxxx-uc.a.run.app') {
+                return storedUrl;
+            }
+            
+            // 檢查當前域名是否包含後端 URL 提示
+            const currentHost = window.location.hostname;
+            if (currentHost.includes('googleapis.com')) {
+                // 如果是 Google Cloud Storage，嘗試常見的後端 URL 模式
+                const possibleUrls = [
+                    'https://ai-dispatch-backend-xxxxx-uc.a.run.app',
+                    'https://ai-dispatch-backend-xxxxx-asia-east1.a.run.app',
+                    'https://ai-dispatch-backend-xxxxx-asia-east1.run.app'
+                ];
+                return possibleUrls[0]; // 返回第一個作為默認
+            }
+            
+            return BACKEND_URL;
+        }
+        
+        // 初始化後端 URL
+        BACKEND_URL = getBackendUrl();
+        console.log('使用後端 URL:', BACKEND_URL);
+        
         // 語音輸入相關變數
         let recognition = null;
         let isVoiceInputActive = false;
@@ -1020,16 +1050,27 @@
             
             try {
                 for (const file of selectedAudioFiles) {
+                    // 調用後端轉錄 API
                     const formData = new FormData();
                     formData.append('audio', file.blob, `${file.name}.webm`);
                     formData.append('mimeType', 'audio/webm');
                     formData.append('languageCode', 'zh-TW');
                     
-                    // 這裡應該調用後端 API，暫時使用模擬
-                    await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬轉錄時間
+                    const response = await fetch(`${BACKEND_URL}/api/transcribe`, {
+                        method: 'POST',
+                        body: formData
+                    });
                     
-                    const mockTranscription = `【${file.name}】\n這是模擬的轉錄結果。實際應用中會調用 Google Cloud Speech-to-Text API 進行轉錄。\n\n`;
-                    allTranscriptions.push(mockTranscription);
+                    if (!response.ok) {
+                        throw new Error(`轉錄失敗: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (result.success && result.transcription) {
+                        allTranscriptions.push(`【${file.name}】\n${result.transcription}\n\n`);
+                    } else {
+                        throw new Error(result.message || '轉錄失敗');
+                    }
                 }
                 
                 const combinedTranscription = allTranscriptions.join('---\n\n');
@@ -1100,7 +1141,7 @@
                 // 調用後端 API 進行 AI 分析
                 console.log('發送 AI 分析請求:', { text: text.substring(0, 50) + '...', timestamp: new Date().toISOString() });
                 
-                const response = await fetch('/api/analyze', {
+                const response = await fetch(`${BACKEND_URL}/api/analyze`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1203,7 +1244,7 @@
             statusList.innerHTML = '<div class="status-item">🔄 正在派遣任務至後端系統...</div>';
             
             try {
-                const response = await fetch('/api/dispatch', {
+                const response = await fetch(`${BACKEND_URL}/api/dispatch`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1289,7 +1330,7 @@
                     return;
                 }
                 
-                const response = await fetch('/api/notify', {
+                const response = await fetch(`${BACKEND_URL}/api/notify`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1397,7 +1438,7 @@
             }
             
             try {
-                const response = await fetch('/api/test-notify', {
+                const response = await fetch(`${BACKEND_URL}/api/test-notify`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1484,12 +1525,48 @@
             }
         }
         
-        function analyzeScreenshot() {
+        async function analyzeScreenshot() {
             const img = document.getElementById('screenshotImage');
             if (img.src) {
-                // 這裡可以整合 OCR 或圖像分析 API
-                const mockAnalysis = '【截圖分析】\n這是一個模擬的截圖分析結果。實際應用中會使用 OCR 技術提取圖片中的文字內容。';
-                processTask(mockAnalysis);
+                try {
+                    // 將圖片轉換為 Blob
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            alert('無法處理圖片');
+                            return;
+                        }
+                        
+                        // 調用後端 OCR 分析 API
+                        const formData = new FormData();
+                        formData.append('image', blob, 'screenshot.png');
+                        formData.append('type', 'screenshot');
+                        
+                        const response = await fetch(`${BACKEND_URL}/api/analyze-image`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`圖片分析失敗: ${response.status}`);
+                        }
+                        
+                        const result = await response.json();
+                        if (result.success && result.text) {
+                            processTask(`【截圖分析】\n${result.text}`);
+                        } else {
+                            throw new Error(result.message || '圖片分析失敗');
+                        }
+                    }, 'image/png');
+                } catch (error) {
+                    console.error('截圖分析錯誤:', error);
+                    alert('截圖分析失敗: ' + error.message);
+                }
             } else {
                 alert('請先上傳截圖');
             }
@@ -1548,13 +1625,46 @@
             }
         }
         
-        function analyzeUploadedFiles() {
+        async function analyzeUploadedFiles() {
             const filesList = document.getElementById('filesList');
             const fileItems = filesList.querySelectorAll('.file-item');
             if (fileItems.length > 0) {
-                // 這裡可以整合檔案解析 API
-                const mockAnalysis = '【檔案分析】\n這是模擬的檔案分析結果。實際應用中會解析 Word、PDF、JSON、Markdown 等檔案內容。';
-                processTask(mockAnalysis);
+                try {
+                    const allTexts = [];
+                    
+                    for (const fileItem of fileItems) {
+                        const file = fileItem.dataset.file;
+                        if (file) {
+                            // 調用後端檔案分析 API
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('type', 'document');
+                            
+                            const response = await fetch(`${BACKEND_URL}/api/analyze-file`, {
+                                method: 'POST',
+                                body: formData
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`檔案分析失敗: ${response.status}`);
+                            }
+                            
+                            const result = await response.json();
+                            if (result.success && result.text) {
+                                allTexts.push(`【${file.name}】\n${result.text}`);
+                            } else {
+                                throw new Error(result.message || '檔案分析失敗');
+                            }
+                        }
+                    }
+                    
+                    if (allTexts.length > 0) {
+                        processTask(`【檔案分析】\n${allTexts.join('\n\n---\n\n')}`);
+                    }
+                } catch (error) {
+                    console.error('檔案分析錯誤:', error);
+                    alert('檔案分析失敗: ' + error.message);
+                }
             } else {
                 alert('請先上傳檔案');
             }
@@ -1566,14 +1676,37 @@
         }
         
         // 雲端檔案功能
-        function fetchCloudDocument() {
+        async function fetchCloudDocument() {
             const url = document.getElementById('cloudUrl').value.trim();
             if (url) {
-                // 這裡可以整合 Google Docs API 或其他雲端服務
-                const mockContent = '【雲端檔案內容】\n這是模擬的雲端檔案內容。實際應用中會通過 API 獲取 Google Docs 或其他雲端服務的檔案內容。';
-                
-                document.getElementById('cloudContent').textContent = mockContent;
-                document.getElementById('cloudPreview').classList.remove('hidden');
+                try {
+                    // 調用後端雲端檔案分析 API
+                    const response = await fetch(`${BACKEND_URL}/api/analyze-cloud-document`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            url: url,
+                            type: 'cloud-document'
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`雲端檔案分析失敗: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (result.success && result.text) {
+                        document.getElementById('cloudContent').textContent = result.text;
+                        document.getElementById('cloudPreview').classList.remove('hidden');
+                    } else {
+                        throw new Error(result.message || '雲端檔案分析失敗');
+                    }
+                } catch (error) {
+                    console.error('雲端檔案分析錯誤:', error);
+                    alert('雲端檔案分析失敗: ' + error.message);
+                }
             } else {
                 alert('請輸入雲端檔案連結');
             }
@@ -1662,7 +1795,7 @@
                 console.log('開始檢查後端狀態...');
                 
                 // 先檢查根路徑
-                const rootResponse = await fetch('/');
+                const rootResponse = await fetch(`${BACKEND_URL}/`);
                 console.log('根路徑響應:', rootResponse.status);
                 
                 if (rootResponse.ok) {
@@ -1673,7 +1806,7 @@
                 }
                 
                 // 檢查簡單測試端點
-                const testResponse = await fetch('/test');
+                const testResponse = await fetch(`${BACKEND_URL}/test`);
                 console.log('測試端點響應:', testResponse.status);
                 
                 if (testResponse.ok) {
@@ -1684,7 +1817,7 @@
                 }
                 
                 // 檢查基本健康狀態
-                const healthResponse = await fetch('/health');
+                const healthResponse = await fetch(`${BACKEND_URL}/health`);
                 console.log('健康檢查響應:', healthResponse.status);
                 
                 if (!healthResponse.ok) {
@@ -1696,7 +1829,7 @@
                 console.log('健康檢查正常:', healthData);
                 
                 // 檢查 AI 分析端點
-                const debugResponse = await fetch('/api/debug');
+                const debugResponse = await fetch(`${BACKEND_URL}/api/debug`);
                 console.log('調試端點響應:', debugResponse.status);
                 
                 if (debugResponse.ok) {
@@ -1713,14 +1846,44 @@
             }
         }
         
+        // 手動設置後端 URL
+        function setBackendUrl() {
+            const newUrl = prompt('請輸入後端 URL:', BACKEND_URL);
+            if (newUrl && newUrl !== BACKEND_URL) {
+                BACKEND_URL = newUrl;
+                localStorage.setItem('backendUrl', newUrl);
+                console.log('後端 URL 已更新:', BACKEND_URL);
+                showSuccessMessage('✅ 後端 URL 已更新', `新的後端 URL: ${BACKEND_URL}`);
+                
+                // 重新檢查後端狀態
+                checkBackendStatus().then(isHealthy => {
+                    if (isHealthy) {
+                        showSuccessMessage('✅ 後端連接成功', '後端服務連接正常！');
+                    } else {
+                        showErrorMessage('❌ 後端連接失敗', '無法連接到指定的後端 URL。');
+                    }
+                });
+            }
+        }
+        
         // 載入通知設定
         document.addEventListener('DOMContentLoaded', function() {
             loadNotificationSettings();
             
+            // 添加後端 URL 設置按鈕
+            const header = document.querySelector('.header');
+            if (header) {
+                const urlButton = document.createElement('button');
+                urlButton.textContent = '🔧 設置後端 URL';
+                urlButton.style.cssText = 'margin-left: 10px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;';
+                urlButton.onclick = setBackendUrl;
+                header.appendChild(urlButton);
+            }
+            
             // 檢查後端狀態
             checkBackendStatus().then(isHealthy => {
                 if (!isHealthy) {
-                    showErrorMessage('⚠️ 後端連接問題', '無法連接到後端服務，AI 分析功能可能無法正常運作。請檢查後端服務狀態。');
+                    showErrorMessage('⚠️ 後端連接問題', '無法連接到後端服務，AI 分析功能可能無法正常運作。請點擊「設置後端 URL」按鈕配置正確的後端地址。');
                 }
             });
         });

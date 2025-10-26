@@ -54,7 +54,7 @@ jobs:
           --cpu 1 \
           --timeout 300 \
           --max-instances 5 \
-          --set-env-vars "NODE_ENV=production" \
+          --set-env-vars "NODE_ENV=production,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" \
           --no-traffic
         
         echo "等待服務啟動..."
@@ -78,6 +78,9 @@ jobs:
         
         echo "測試 AI 分析端點..."
         curl -f "$BACKEND_URL/api/debug" || echo "AI 分析端點失敗"
+        
+        # 將後端 URL 寫入環境變數供前端使用
+        echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
 
     - name: Deploy frontend to Cloud Storage
       run: |
@@ -94,6 +97,9 @@ jobs:
         gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME/
 
         # 直接上傳簡化的 HTML 文件
+        echo "替換後端 URL: $BACKEND_URL"
+        sed -i "s|https://ai-dispatch-backend-xxxxx-uc.a.run.app|$BACKEND_URL|g" index.html
+        
         echo "上傳簡化的 HTML 文件:"
         gsutil cp index.html gs://$BUCKET_NAME/
         

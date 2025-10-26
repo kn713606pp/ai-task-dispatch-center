@@ -27,10 +27,15 @@ export const triggerDataPersistenceWorkflow = async (
             throw new Error(errorData.message || `後端 API 錯誤: ${response.statusText}`);
         }
 
-        // 假設後端成功處理了所有步驟，依序更新前端狀態
-        onProgressUpdate({ step: 'firestore', message: '✅ 1. 任務成功寫入 Firestore！' });
-        onProgressUpdate({ step: 'sheets', message: '✅ 2. 成功同步至 Google Sheets！' });
-        onProgressUpdate({ step: 'docs', message: '✅ 3. Google Docs 文件已建立！' });
+        // 根據後端回應更新前端狀態
+        const responseData = await response.json();
+        if (responseData.success) {
+            onProgressUpdate({ step: 'firestore', message: '✅ 1. 任務成功寫入 Firestore！' });
+            onProgressUpdate({ step: 'sheets', message: '✅ 2. 成功同步至 Google Sheets！' });
+            onProgressUpdate({ step: 'docs', message: '✅ 3. Google Docs 文件已建立！' });
+        } else {
+            throw new Error(responseData.message || '後端處理失敗');
+        }
 
     } catch (error) {
         console.error('Data Persistence Workflow error:', error);

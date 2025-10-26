@@ -311,28 +311,183 @@ app.post('/api/analyze', async (req, res) => {
 // Gemini API 分析函數
 async function analyzeWithGemini(text) {
     try {
-        // 這裡應該調用 Gemini API
-        // 暫時使用模擬結果，實際應該調用 Google Gemini API
-        const mockResult = {
-            tasks: [{
-                id: `task_${Date.now()}`,
-                title: '【AI 分析】' + text.substring(0, 30) + '...',
-                description: text,
-                priority: '中',
-                status: '待辦事項',
-                category: 'AI 分析',
-                assignee: '艾蜜莉',
-                dueDate: new Date().toISOString().split('T')[0]
-            }],
-            summary: '這是基於 Gemini 2.5 Flash 的任務分析結果。'
-        };
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error('GEMINI_API_KEY 環境變數未設定');
+        }
+
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+            {
+                contents: [{
+                    parts: [{
+                        text: `請根據以下內容分析並提取任務：
+
+${text}
+
+請按照以下 JSON 格式回應：
+{
+  "tasks": [
+    {
+      "id": "唯一ID",
+      "title": "任務標題",
+      "description": "任務描述",
+      "priority": "緊急|高|中|低",
+      "status": "待辦事項",
+      "category": "部門分類",
+      "assignee": "負責人",
+      "dueDate": "YYYY-MM-DD"
+    }
+  ],
+  "summary": "任務摘要"
+}
+
+請確保：
+1. 董總交辦事項優先級設為「緊急」，負責人為「艾蜜莉」
+2. 急件在標題前加上【急件】
+3. 根據內容關鍵字分配部門和負責人
+4. 日期格式為 YYYY-MM-DD`
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 2048,
+                }
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        if (!response.data || !response.data.candidates || !response.data.candidates[0]) {
+            throw new Error('Gemini API 回應格式錯誤');
+        }
+
+        const content = response.data.candidates[0].content.parts[0].text;
+        console.log('Gemini API 原始回應:', content);
+
+        // 解析 JSON 回應
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error('無法從 Gemini 回應中提取 JSON');
+        }
+
+        const result = JSON.parse(jsonMatch[0]);
         
-        return mockResult;
+        // 驗證回應格式
+        if (!result.tasks || !Array.isArray(result.tasks)) {
+            throw new Error('Gemini 回應格式錯誤：缺少 tasks 陣列');
+        }
+
+        // 為每個任務添加 ID（如果沒有）
+        result.tasks = result.tasks.map((task, index) => ({
+            ...task,
+            id: task.id || `task_${Date.now()}_${index}`
+        }));
+
+        console.log('Gemini API 分析完成，任務數量:', result.tasks.length);
+        return result;
+
     } catch (error) {
         console.error('Gemini API 錯誤:', error);
         throw new Error('Gemini API 調用失敗: ' + error.message);
     }
 }
+
+// 圖片分析端點 (OCR)
+app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: '沒有收到圖片檔案' });
+        }
+
+        console.log('收到圖片分析請求:', req.file.originalname);
+        
+        // 這裡應該調用 Google Cloud Vision API 進行 OCR
+        // 暫時使用模擬結果，實際應該調用 Vision API
+        const mockText = `【圖片 OCR 分析結果】\n\n這是一個模擬的 OCR 分析結果。實際應用中會使用 Google Cloud Vision API 提取圖片中的文字內容。\n\n檔案名稱: ${req.file.originalname}\n檔案大小: ${req.file.size} bytes\n檔案類型: ${req.file.mimetype}`;
+        
+        res.json({
+            success: true,
+            text: mockText,
+            filename: req.file.originalname,
+            size: req.file.size,
+            mimeType: req.file.mimetype
+        });
+        
+    } catch (error) {
+        console.error('圖片分析錯誤:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '圖片分析失敗: ' + error.message 
+        });
+    }
+});
+
+// 檔案分析端點
+app.post('/api/analyze-file', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: '沒有收到檔案' });
+        }
+
+        console.log('收到檔案分析請求:', req.file.originalname);
+        
+        // 這裡應該根據檔案類型調用相應的解析 API
+        // 暫時使用模擬結果，實際應該解析檔案內容
+        const mockText = `【檔案分析結果】\n\n這是一個模擬的檔案分析結果。實際應用中會根據檔案類型（Word、PDF、JSON、Markdown 等）解析檔案內容。\n\n檔案名稱: ${req.file.originalname}\n檔案大小: ${req.file.size} bytes\n檔案類型: ${req.file.mimetype}`;
+        
+        res.json({
+            success: true,
+            text: mockText,
+            filename: req.file.originalname,
+            size: req.file.size,
+            mimeType: req.file.mimetype
+        });
+        
+    } catch (error) {
+        console.error('檔案分析錯誤:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '檔案分析失敗: ' + error.message 
+        });
+    }
+});
+
+// 雲端檔案分析端點
+app.post('/api/analyze-cloud-document', async (req, res) => {
+    try {
+        const { url, type } = req.body;
+        
+        if (!url) {
+            return res.status(400).json({ success: false, message: '沒有收到雲端檔案 URL' });
+        }
+
+        console.log('收到雲端檔案分析請求:', url);
+        
+        // 這裡應該調用相應的雲端服務 API 獲取檔案內容
+        // 暫時使用模擬結果，實際應該獲取真實的檔案內容
+        const mockText = `【雲端檔案分析結果】\n\n這是一個模擬的雲端檔案分析結果。實際應用中會通過 Google Docs API 或其他雲端服務 API 獲取檔案內容。\n\n檔案 URL: ${url}\n檔案類型: ${type || 'unknown'}`;
+        
+        res.json({
+            success: true,
+            text: mockText,
+            url: url,
+            type: type
+        });
+        
+    } catch (error) {
+        console.error('雲端檔案分析錯誤:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '雲端檔案分析失敗: ' + error.message 
+        });
+    }
+});
 
 // 音訊轉錄端點
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
